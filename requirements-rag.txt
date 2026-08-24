@@ -1,0 +1,5 @@
+# Scientific RAG — cần Qdrant chạy (docker compose up -d qdrant).
+-r requirements.txt
+qdrant-client>=1.9
+pymupdf>=1.24
+tenacity>=8.2

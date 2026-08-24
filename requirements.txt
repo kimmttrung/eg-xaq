@@ -1,0 +1,10 @@
+# Lõi — đủ để chạy rule engine, KG, pipeline, narrator dryrun và TOÀN BỘ test.
+# Không cần data lab, không cần API key, không cần Docker.
+pydantic>=2.6
+pydantic-settings>=2.2
+PyYAML>=6.0
+networkx>=3.2
+numpy>=1.26
+pandas>=2.2
+python-dotenv>=1.0
+requests>=2.31

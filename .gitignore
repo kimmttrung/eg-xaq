@@ -1,0 +1,60 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Môi trường ảo ---
+.venv/
+venv/
+env/
+
+# --- Bí mật: KHÔNG BAO GIỜ commit ---
+.env
+*.key
+*_key.txt
+secrets/
+
+# --- Dữ liệu nặng: quản lý ngoài git ---
+data/raw/
+data/interim/
+data/corpus/pdf/
+data/corpus/*.jsonl
+*.nc
+*.grib
+*.grib2
+*.tif
+*.tiff
+*.zip
+
+# --- Checkpoint mô hình của lab (nặng + không phải tài sản repo này) ---
+models/
+*.pkl
+*.joblib
+*.ubj
+*.bin
+
+# --- Qdrant volume ---
+qdrant_storage/
+
+# --- Cache model embedding của HuggingFace ---
+.cache/
+.hf_cache/
+
+# --- Notebook output ---
+.ipynb_checkpoints/
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+CLAUDE.md

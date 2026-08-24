@@ -1,0 +1,22 @@
+# Repo này KHÔNG đóng gói thành package pip.
+# `src/` là source root, được đưa vào path qua pytest `pythonpath` và qua
+# scripts/_bootstrap.py. Phụ thuộc khai báo trong requirements/*.txt.
+#
+# Lý do: layout phẳng src/{config.py, data/, rag/, ...} dùng tên module chung
+# (config, data, rag). Cài chúng vào site-packages sẽ đụng tên với thư viện khác.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "schemas", "kb", "pipeline", "data", "xai", "reasoning", "rag", "narrator"]

@@ -1,0 +1,2 @@
+# Thư mục corpus RAG.
+# papers.jsonl do scripts/build_corpus.py sinh ra, KHÔNG commit (xem .gitignore).

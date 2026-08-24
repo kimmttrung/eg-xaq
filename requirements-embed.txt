@@ -1,0 +1,5 @@
+# Embedding & rerank THẬT. Nặng (~2 GB do torch) — chỉ cài khi đã sẵn sàng
+# index corpus. Kết quả khóa luận BẮT BUỘC dùng backend này, không dùng `hash`.
+-r requirements-rag.txt
+torch>=2.2
+sentence-transformers>=3.0
