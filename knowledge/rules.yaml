@@ -1,0 +1,222 @@
+# =============================================================================
+# rules.yaml — Ngưỡng kích hoạt cơ chế khí quyển
+# =============================================================================
+# MỖI ngưỡng trong file này PHẢI có trường `rationale` và `source`.
+# Hội đồng sẽ hỏi "con số này ở đâu ra?" — câu trả lời phải nằm ngay đây.
+#
+# Hàm rule_strength (xem docs/04-reasoning.md §2):
+#   direction: below  ->  strength = clip((threshold - x) / (threshold - saturation), 0, 1)
+#   direction: above  ->  strength = clip((x - threshold) / (saturation - threshold), 0, 1)
+#
+#   threshold  = điểm BẮT ĐẦU kích hoạt (strength = 0)
+#   saturation = điểm cơ chế đã rõ ràng   (strength = 1)
+#
+# Trường `calibration` ghi cách hiệu chỉnh lại khi đã có dữ liệu GFS của lab
+# (xem docs/02-data-contract.md §6 R1). Ngưỡng hiện tại là ngưỡng VĂN LIỆU,
+# chưa hiệu chỉnh cho phân phối GFS Hà Nội.
+# =============================================================================
+
+version: "0.1.0"
+calibrated: false # đổi thành true sau khi chạy scripts/calibrate_thresholds.py
+
+rules:
+  # ---------------------------------------------------------------- Tích tụ
+  - id: R1
+    name: "Lớp xáo trộn thấp"
+    variable: blh_m
+    direction: below
+    threshold: 500.0
+    saturation: 200.0
+    unit: m
+    rationale: >
+      PBLH là "trần nhà" mà chất ô nhiễm được pha loãng trong đó. Nồng độ xấp xỉ
+      tỉ lệ nghịch với chiều cao lớp xáo trộn: PBLH giảm một nửa thì nồng độ gần
+      như tăng gấp đôi với cùng lượng phát thải. Ngưỡng 500 m là mức thường được
+      dùng để phân định "lớp xáo trộn nông" trong các nghiên cứu haze đô thị.
+    source: "Ngưỡng văn liệu (haze đô thị Đông Á). Cần RAG xác nhận + hiệu chỉnh cho Hà Nội."
+    calibration: percentile_15_winter
+
+  - id: R2
+    name: "Tù đọng khí quyển"
+    variable: wind_speed_ms
+    direction: below
+    threshold: 1.5
+    saturation: 0.3
+    unit: m/s
+    rationale: >
+      Gió yếu làm giảm bình lưu ngang, chất ô nhiễm không được vận chuyển ra khỏi
+      vùng nguồn. 1.5 m/s là ngưỡng phổ biến định nghĩa air stagnation.
+    source: "Tiêu chí air stagnation (tương tự US NCEI Air Stagnation Index)."
+    calibration: percentile_20
+
+  - id: R3
+    name: "Nghịch nhiệt"
+    variable: lapse_rate_c_per_km
+    direction: below
+    threshold: 2.0
+    saturation: -2.0
+    unit: °C/km
+    rationale: >
+      Khí quyển bình thường lạnh dần theo độ cao (~6.5 °C/km). Khi lapse rate tiến
+      về 0 hoặc âm (nhiệt tăng theo độ cao), tầng khí trở nên rất bền vững, chặn
+      đối lưu thẳng đứng — "nắp nồi" giữ bụi lại gần mặt đất.
+      Tính từ (t2m - t850) / 1.5 km.
+    source: "Cơ chế kinh điển temperature inversion. Cần biến ở nhiều mực áp (t850)."
+    requires: [t850_c]
+    calibration: none
+
+  - id: R10
+    name: "Tù đọng kéo dài nhiều ngày"
+    variable: stagnation_days
+    direction: above
+    threshold: 1.0
+    saturation: 4.0
+    unit: ngày
+    rationale: >
+      Tích tụ là quá trình cộng dồn. Một ngày gió yếu chưa đủ; 3–4 ngày liên tiếp
+      gió yếu + PBLH thấp mới tạo ra episode ô nhiễm nặng. Biến này khớp trực tiếp
+      với các đặc trưng accum (mean/max 2–3 ngày) của mô hình lab.
+    source: "Suy ra từ thiết kế đặc trưng accum của mô hình lab."
+    calibration: none
+
+  - id: R11
+    name: "Cao áp / chìm lún khí quyển"
+    variable: mslp_hpa
+    direction: above
+    threshold: 1020.0
+    saturation: 1032.0
+    unit: hPa
+    rationale: >
+      Hệ thống cao áp gây chìm lún (subsidence), nén lớp xáo trộn xuống thấp và
+      đi kèm gió yếu, trời quang. Là chỉ dấu quy mô synoptic của các đợt tù đọng.
+    source: "Cơ chế synoptic kinh điển; ngưỡng theo áp suất mực biển mùa đông Bắc Bộ."
+    calibration: percentile_80_winter
+
+  # ------------------------------------------------------- Thông thoáng tổng hợp
+  - id: R7
+    name: "Chỉ số thông gió thấp"
+    variable: ventilation_index_m2s
+    direction: below
+    threshold: 4000.0
+    saturation: 1000.0
+    unit: m²/s
+    rationale: >
+      Ventilation Index = PBLH × tốc độ gió. Gộp cả khuếch tán đứng và ngang vào
+      một số duy nhất. Thang phân loại thường dùng trong quản lý khói: rất kém
+      < 2000, kém 2000–4000, khá 4000–6000, tốt > 6000 (m²/s).
+      Ưu điểm: xử lý đúng trường hợp PBLH thấp nhưng gió mạnh (vẫn sạch) — trường
+      hợp mà R1 đơn lẻ sẽ báo động sai.
+      ⚠ Các thang VI trong văn liệu lệch nhau đáng kể (một số nguồn quy đổi từ
+      ft²/s cho ngưỡng ~2350/4700/9400). Đây chính là lý do phải hiệu chỉnh theo
+      phân vị của dữ liệu GFS thay vì tin con số tuyệt đối.
+    source: "Ventilation index trong quản lý khói/cháy rừng. Cần RAG xác nhận thang cho đô thị."
+    calibration: percentile_20
+
+  - id: R8
+    name: "Chỉ số thông gió cao"
+    variable: ventilation_index_m2s
+    direction: above
+    threshold: 6000.0
+    saturation: 20000.0
+    unit: m²/s
+    rationale: >
+      Mặt đối lập của R7, ngưỡng đặt ở mức "tốt" của cùng thang phân loại. Kích
+      hoạt cơ chế LOẠI BỎ, dùng để trả lời câu hỏi "vì sao hôm nay trời trong
+      lành?" — hệ thống phải giải thích được cả ngày sạch, không chỉ ngày bẩn.
+    source: "Cùng nguồn R7."
+    calibration: percentile_80
+
+  # ------------------------------------------------------------- Loại bỏ / rửa trôi
+  - id: R4
+    name: "Rửa trôi ướt"
+    variable: precip_mm
+    direction: above
+    threshold: 1.0
+    saturation: 10.0
+    unit: mm/ngày
+    rationale: >
+      Wet deposition: hạt sol khí bị cuốn theo giọt mưa (rainout trong mây,
+      washout dưới mây). Mưa > 1 mm bắt đầu có hiệu quả rõ rệt với PM2.5;
+      mưa lớn có thể làm giảm 50–80% nồng độ trong vài giờ.
+    source: "Cơ chế kinh điển. Cần RAG xác nhận định lượng cho khí hậu nhiệt đới ẩm."
+    calibration: none
+
+  - id: R13
+    name: "Chuỗi ngày khô"
+    variable: precip_sum_3d_mm
+    direction: below
+    threshold: 1.0
+    saturation: 0.0
+    unit: mm
+    rationale: >
+      Không phải cơ chế gây ô nhiễm, mà là điều kiện LOẠI TRỪ: không mưa nhiều ngày
+      nghĩa là cơ chế rửa trôi vắng mặt, giải thích vì sao ô nhiễm không được làm
+      sạch. Rất cần cho câu hỏi dạng "vì sao xấu dù không có nguồn thải bất thường?".
+    source: "Điều kiện phủ định của R4."
+    calibration: none
+
+  - id: R9
+    name: "Bình lưu mạnh / gió mùa Đông Bắc"
+    variable: wind_speed_ms
+    direction: above
+    threshold: 4.0
+    saturation: 8.0
+    unit: m/s
+    rationale: >
+      Gió mạnh (thường đi kèm đợt không khí lạnh tràn về) thổi sạch ô nhiễm tích tụ
+      trong vài giờ. Cơ chế chính giải thích các ngày Hà Nội đột ngột trong lành
+      vào mùa đông.
+    source: "Cơ chế cold surge ventilation ở đồng bằng Bắc Bộ."
+    calibration: percentile_85
+
+  # ------------------------------------------------------- Hình thành thứ cấp
+  - id: R5
+    name: "Độ ẩm cao"
+    variable: rh_pct
+    direction: above
+    threshold: 80.0
+    saturation: 95.0
+    unit: "%"
+    rationale: >
+      Hai hiệu ứng cùng lúc: (1) hygroscopic growth — hạt hút ẩm phình to, tán xạ
+      mạnh hơn và có khối lượng lớn hơn; (2) phản ứng pha lỏng trên bề mặt hạt ẩm
+      thúc đẩy hình thành sulfate/nitrate thứ cấp. Hiệu ứng PHI TUYẾN, tăng vọt
+      trên RH ~80%.
+      ⚠ Cơ chế này cần tiền chất (SO2/NO2) mới hoạt động — mà ta KHÔNG đo được.
+      Vì vậy confidence_prior của cơ chế tương ứng phải để thấp.
+    source: "Cơ chế secondary aerosol formation. BẮT BUỘC phải có RAG hỗ trợ."
+    calibration: none
+
+  # ---------------------------------------------------------------- Vận chuyển
+  - id: R6
+    name: "Điểm cháy ở thượng nguồn gió"
+    variable: upwind_fire_count
+    direction: above
+    threshold: 5.0
+    saturation: 60.0
+    unit: điểm cháy
+    rationale: >
+      Số điểm cháy VIIRS/MODIS nằm trong quạt thượng nguồn gió (±45°) và trong bán
+      kính vận chuyển (mặc định 300 km, xem knowledge/config). Đặc trưng cho các
+      đợt ô nhiễm tháng 3–4 và tháng 9–10 do đốt rơm rạ sau thu hoạch ở đồng bằng
+      sông Hồng.
+    source: "NASA FIRMS + hình học thượng nguồn gió. Tỉ lệ đóng góp cần RAG."
+    requires: [upwind_fire_count]
+    calibration: none
+
+  - id: R12
+    name: "Gió từ hướng có nguồn thải"
+    variable: source_sector_alignment
+    direction: above
+    threshold: 0.3
+    saturation: 0.9
+    unit: "tỉ lệ [0,1]"
+    rationale: >
+      Mức trùng khớp giữa hướng gió tới và hướng của các cụm nguồn đã biết (KCN,
+      lò gạch, trục giao thông lớn), tính trong bán kính 50 km. Giá trị 1.0 nghĩa
+      là gió thổi thẳng từ cụm nguồn về điểm đang xét.
+      ⚠ Cần layer GIS nguồn thải — CHƯA CÓ. Rule này sẽ không kích hoạt cho đến khi
+      có dữ liệu, và điều đó được ghi vào `bundle.missing` (fail-safe, không đoán bù).
+    source: "Cần dữ liệu quy hoạch KCN + OSM. Xem docs/02-data-contract.md."
+    requires: [source_sector_alignment]
+    calibration: none

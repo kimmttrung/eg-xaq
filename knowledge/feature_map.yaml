@@ -1,0 +1,106 @@
+# =============================================================================
+# feature_map.yaml — Ánh xạ biến CHUẨN HÓA ↔ tên đặc trưng của mô hình lab
+# =============================================================================
+# Vấn đề: mechanisms.yaml nói về biến "blh"; mô hình lab có thể đặt tên
+# "blh_min_2d", "hpbl", "HPBL_surface_min_48h"... Consistency check cần biết
+# đặc trưng nào của mô hình thuộc về cơ chế nào.
+#
+# ⚠ KHI NHẬN ĐƯỢC DANH SÁCH ĐẶC TRƯNG THẬT TỪ LAB (docs/02 mục M4),
+#   VIỆC ĐẦU TIÊN LÀ CẬP NHẬT FILE NÀY.
+#   Không cập nhật → shap_agreement luôn = 0 → đóng góp nghiên cứu số 2 vô hiệu.
+#
+# Khớp không phân biệt hoa thường, theo thứ tự: khớp chính xác trước, rồi mới
+# khớp theo tiền tố trong `prefixes`.
+# =============================================================================
+
+version: "0.1.0"
+source: "mock" # đổi thành "lab" sau khi cập nhật từ checkpoint thật
+
+canonical_variables:
+  blh:
+    description: "Chiều cao lớp biên hành tinh"
+    unit: m
+    exact: [blh, pblh, hpbl, blh_m, boundary_layer_height]
+    prefixes: [blh_, pblh_, hpbl_]
+
+  wind_speed:
+    description: "Tốc độ gió 10 m"
+    unit: m/s
+    exact: [wind_speed, ws, ws10, wind_speed_ms, si10]
+    prefixes: [wind_speed_, ws10_, windspeed_]
+
+  wind_dir:
+    description: "Hướng gió (thổi tới từ)"
+    unit: degree
+    exact: [wind_dir, wd, wdir, wind_dir_deg, u10, v10]
+    prefixes: [wind_dir_, wd_, u10_, v10_]
+
+  temperature:
+    description: "Nhiệt độ 2 m và các biến nhiệt liên quan nghịch nhiệt"
+    unit: °C
+    exact: [t2m, temp, temperature, t2m_c, t850, lapse_rate, lapse_rate_c_per_km]
+    prefixes: [t2m_, temp_, t850_, lapse_]
+
+  humidity:
+    description: "Độ ẩm tương đối / điểm sương"
+    unit: "%"
+    exact: [rh, rh2m, rh_pct, d2m, dewpoint, sh2]
+    prefixes: [rh_, rh2m_, d2m_, dew]
+
+  precip:
+    description: "Lượng mưa"
+    unit: mm
+    exact: [tp, precip, rain, rain_sum, precip_mm, apcp]
+    prefixes: [tp_, precip_, rain_, apcp_]
+
+  pressure:
+    description: "Áp suất mực biển"
+    unit: hPa
+    exact: [msl, mslp, mslp_hpa, sp, prmsl]
+    prefixes: [msl_, mslp_, prmsl_]
+
+  fire:
+    description: "Điểm cháy / FRP từ FIRMS"
+    unit: count
+    exact: [fire_count, upwind_fire_count, frp, frp_sum]
+    prefixes: [fire_, frp_]
+
+  persistence:
+    description: "PM2.5 quá khứ dùng làm đầu vào (nếu mô hình lab có dùng)"
+    unit: µg/m³
+    exact: [pm25_lag1, pm25_lag2, pm25_prev, pm25_roll3]
+    prefixes: [pm25_lag, pm25_roll, pm25_prev]
+
+# -----------------------------------------------------------------------------
+# Đặc trưng KHÔNG mang cơ chế vật lý.
+# Nếu SHAP cho thấy các biến này chiếm phần lớn attribution → đó là dấu hiệu
+# mô hình học mẫu không gian/thời gian thay vì cơ chế khí quyển.
+# Hệ thống KHÔNG coi đây là lỗi, mà báo cáo như một phát hiện (docs/02 §6 R2).
+# -----------------------------------------------------------------------------
+non_mechanistic:
+  description: >
+    Đặc trưng tĩnh theo pixel hoặc mã hóa thời gian. Chúng có thể dự báo tốt mà
+    không giải thích được gì về nhân quả.
+  exact:
+    [
+      lat,
+      lon,
+      latitude,
+      longitude,
+      elevation,
+      dem,
+      landuse,
+      land_cover,
+      population,
+      pop_density,
+      road_density,
+      dist_to_road,
+      doy,
+      day_of_year,
+      month,
+      season,
+      sin_doy,
+      cos_doy,
+      pixel_id,
+    ]
+  prefixes: [lc_, landuse_, static_, geo_, doy_, month_]

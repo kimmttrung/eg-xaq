@@ -1,0 +1,257 @@
+# =============================================================================
+# mechanisms.yaml — Cơ chế khí quyển–ô nhiễm (tầng tri thức cứng)
+# =============================================================================
+# Mỗi mechanism là một NODE trong Knowledge Graph. Rule kích hoạt nó, RAG chứng
+# minh nó, SHAP kiểm chứng chéo nó.
+#
+# Trường quan trọng:
+#   effect            increase | decrease  — cơ chế đẩy PM2.5 lên hay xuống
+#   triggers.mode     all | any            — cách gộp rule_strength của primary
+#   co_triggers       rule củng cố, KHÔNG tự tạo được cơ chế từ con số 0
+#   variables         biến CHUẨN HÓA (canonical), ánh xạ sang tên đặc trưng của
+#                     lab qua knowledge/feature_map.yaml
+#   expected_shap     dấu SHAP kỳ vọng NẾU cơ chế đang hoạt động. Đây là cốt lõi
+#                     của consistency check — sai dấu ở đây làm hỏng đóng góp
+#                     nghiên cứu số 2.
+#   confidence_prior  mức tin cậy nội tại của cơ chế (đồng thuận khoa học tới đâu)
+#   rag_query         câu truy vấn TIẾNG ANH gửi vào vector DB (gated retrieval).
+#                     KHÔNG dùng câu hỏi của người dùng.
+# =============================================================================
+
+version: "0.1.0"
+
+config:
+  upwind_sector_deg: 90.0 # quạt ±45° quanh hướng gió tới
+  upwind_radius_km: 300.0 # bán kính xét điểm cháy
+  source_radius_km: 50.0 # bán kính xét nguồn thải GIS
+  inversion_layer_km: 1.5 # độ cao quy ước của mực 850 hPa
+
+mechanisms:
+  # ═══════════════════════════════════════════════ TÍCH TỤ (accumulation)
+  - id: MECH_LOW_PBLH
+    name: "Tích tụ do lớp xáo trộn thấp"
+    name_en: "Accumulation under a shallow mixing layer"
+    category: accumulation
+    effect: increase
+    triggers: { mode: all, rules: [R1] }
+    co_triggers: [R2, R11, R10]
+    variables:
+      blh: { expected_shap: positive }
+    confidence_prior: 0.90
+    rag_query: >
+      planetary boundary layer height shallow mixing layer PM2.5 accumulation
+      urban haze episode
+    explanation_template: >
+      Lớp xáo trộn khí quyển chỉ dày khoảng {blh_m:.0f} m, hạn chế thể tích pha
+      loãng nên PM2.5 tích tụ gần mặt đất.
+    limitations: >
+      PBLH từ mô hình dự báo (GFS) có sai số đáng kể so với quan trắc lidar/radiosonde.
+
+  - id: MECH_STAGNATION
+    name: "Tù đọng do gió yếu"
+    name_en: "Atmospheric stagnation"
+    category: accumulation
+    effect: increase
+    triggers: { mode: all, rules: [R2] }
+    co_triggers: [R11]
+    variables:
+      wind_speed: { expected_shap: positive }
+    confidence_prior: 0.88
+    rag_query: >
+      atmospheric stagnation low wind speed particulate matter accumulation
+      air quality episode
+    explanation_template: >
+      Tốc độ gió chỉ {wind_speed_ms:.1f} m/s, gần như không có bình lưu ngang để
+      đưa chất ô nhiễm ra khỏi khu vực.
+
+  - id: MECH_INVERSION
+    name: "Nghịch nhiệt giữ ô nhiễm"
+    name_en: "Temperature inversion capping"
+    category: accumulation
+    effect: increase
+    triggers: { mode: all, rules: [R3] }
+    co_triggers: [R1, R11]
+    variables:
+      temperature: { expected_shap: positive }
+      blh: { expected_shap: positive }
+    confidence_prior: 0.85
+    rag_query: >
+      temperature inversion capping layer PM2.5 winter haze stable boundary layer
+    explanation_template: >
+      Gradient nhiệt theo độ cao chỉ {lapse_rate_c_per_km:.1f} °C/km (bình thường
+      ~6.5), tầng khí rất bền vững, chặn đối lưu thẳng đứng như một "nắp nồi".
+    limitations: >
+      Chỉ suy ra từ chênh lệch t2m–t850; không phát hiện được nghịch nhiệt mỏng
+      sát mặt đất (surface-based inversion) vốn cần radiosonde.
+
+  - id: MECH_POOR_VENTILATION
+    name: "Thông thoáng khí quyển kém"
+    name_en: "Poor atmospheric ventilation"
+    category: accumulation
+    effect: increase
+    triggers: { mode: all, rules: [R7] }
+    co_triggers: [R10]
+    variables:
+      blh: { expected_shap: positive }
+      wind_speed: { expected_shap: positive }
+    confidence_prior: 0.87
+    rag_query: >
+      ventilation index boundary layer height wind speed product air pollution
+      dispersion capacity
+    explanation_template: >
+      Chỉ số thông gió (PBLH × gió) chỉ {ventilation_index_m2s:.0f} m²/s, dưới
+      ngưỡng 4000 m²/s — khả năng phát tán của khí quyển rất hạn chế.
+
+  - id: MECH_MULTIDAY_ACCUMULATION
+    name: "Tích tụ cộng dồn nhiều ngày"
+    name_en: "Multi-day pollutant build-up"
+    category: accumulation
+    effect: increase
+    triggers: { mode: all, rules: [R10] }
+    co_triggers: [R1, R2, R13]
+    variables:
+      wind_speed: { expected_shap: positive }
+      blh: { expected_shap: positive }
+    confidence_prior: 0.80
+    rag_query: >
+      multi-day persistent haze episode accumulation consecutive stagnant days
+      PM2.5 build-up
+    explanation_template: >
+      Điều kiện tù đọng đã kéo dài {stagnation_days:.0f} ngày, nồng độ cộng dồn
+      qua từng ngày thay vì được làm sạch.
+
+  - id: MECH_ANTICYCLONIC
+    name: "Chìm lún dưới cao áp"
+    name_en: "Anticyclonic subsidence"
+    category: accumulation
+    effect: increase
+    triggers: { mode: all, rules: [R11] }
+    co_triggers: [R2, R1]
+    variables:
+      pressure: { expected_shap: positive }
+    confidence_prior: 0.72
+    rag_query: >
+      anticyclone high pressure subsidence stable weather PM2.5 pollution episode
+      synoptic pattern
+    explanation_template: >
+      Áp suất mực biển {mslp_hpa:.0f} hPa cho thấy khu vực nằm dưới hệ thống cao áp,
+      gây chìm lún khí quyển, nén lớp xáo trộn và làm gió yếu đi.
+
+  # ═══════════════════════════════════════════════ VẬN CHUYỂN (transport)
+  - id: MECH_BIOMASS_TRANSPORT
+    name: "Vận chuyển khói đốt sinh khối"
+    name_en: "Biomass burning smoke transport"
+    category: transport
+    effect: increase
+    triggers: { mode: all, rules: [R6] }
+    co_triggers: [R2]
+    variables:
+      fire: { expected_shap: positive }
+      wind_dir: { expected_shap: any }
+    confidence_prior: 0.75
+    rag_query: >
+      biomass burning crop residue open burning smoke transport PM2.5
+      Red River Delta Southeast Asia satellite fire detection
+    explanation_template: >
+      Phát hiện {upwind_fire_count:.0f} điểm cháy ở thượng nguồn gió, cách khoảng
+      {upwind_fire_distance_km:.0f} km — khói có khả năng được vận chuyển tới khu vực.
+    limitations: >
+      FIRMS bỏ sót đám cháy nhỏ và bị mây che. Số điểm cháy chỉ là proxy cho cường
+      độ phát thải, không phải lượng phát thải thực. Quy kết chỉ ở mức "có khả năng".
+
+  - id: MECH_SOURCE_SECTOR_TRANSPORT
+    name: "Vận chuyển từ cụm nguồn thượng nguồn gió"
+    name_en: "Upwind source-sector transport"
+    category: transport
+    effect: increase
+    triggers: { mode: all, rules: [R12] }
+    co_triggers: []
+    variables:
+      wind_dir: { expected_shap: any }
+    confidence_prior: 0.65
+    rag_query: >
+      wind direction dependent pollution transport industrial source sector
+      urban receptor conditional probability function
+    explanation_template: >
+      Hướng gió {wind_dir_deg:.0f}° trùng với hướng của cụm nguồn thải đã biết
+      trong bán kính 50 km.
+    limitations: >
+      Cần layer GIS nguồn thải chính thức — hiện chưa có cho Hà Nội.
+
+  # ═══════════════════════════════════════════════ HÌNH THÀNH (formation)
+  - id: MECH_SECONDARY_AEROSOL
+    name: "Sol khí thứ cấp & hút ẩm phình to"
+    name_en: "Secondary aerosol formation and hygroscopic growth"
+    category: formation
+    effect: increase
+    triggers: { mode: all, rules: [R5] }
+    co_triggers: [R2, R1]
+    variables:
+      humidity: { expected_shap: positive }
+    confidence_prior: 0.60
+    rag_query: >
+      relative humidity hygroscopic growth aqueous phase secondary aerosol
+      sulfate nitrate formation haze nonlinear
+    explanation_template: >
+      Độ ẩm tương đối {rh_pct:.0f}% thúc đẩy hạt hút ẩm phình to và phản ứng pha
+      lỏng hình thành sulfate/nitrate thứ cấp.
+    limitations: >
+      KHÔNG có dữ liệu tiền chất (SO2, NO2, NH3) và không có thành phần hóa học của
+      hạt. Cơ chế này chỉ nêu ở mức GIẢ THUYẾT, confidence không được vượt TRUNG BÌNH.
+
+  # ═══════════════════════════════════════════════ LOẠI BỎ (removal)
+  - id: MECH_WET_DEPOSITION
+    name: "Rửa trôi bởi mưa"
+    name_en: "Wet deposition / precipitation scavenging"
+    category: removal
+    effect: decrease
+    triggers: { mode: all, rules: [R4] }
+    co_triggers: []
+    variables:
+      precip: { expected_shap: negative }
+    confidence_prior: 0.92
+    rag_query: >
+      wet deposition precipitation scavenging rainout washout PM2.5 removal
+      efficiency
+    explanation_template: >
+      Lượng mưa {precip_mm:.1f} mm cuốn theo hạt sol khí xuống mặt đất
+      (rainout/washout), làm giảm nồng độ PM2.5.
+
+  - id: MECH_ADVECTION_CLEANSING
+    name: "Gió mạnh thổi sạch"
+    name_en: "Strong advection / cold surge ventilation"
+    category: removal
+    effect: decrease
+    triggers: { mode: any, rules: [R9, R8] }
+    co_triggers: []
+    variables:
+      wind_speed: { expected_shap: negative }
+      blh: { expected_shap: negative }
+    confidence_prior: 0.88
+    rag_query: >
+      cold surge northeast monsoon strong wind ventilation pollutant flush-out
+      air quality improvement
+    explanation_template: >
+      Gió {wind_speed_ms:.1f} m/s kết hợp lớp xáo trộn dày cho chỉ số thông gió
+      {ventilation_index_m2s:.0f} m²/s — khí quyển phát tán tốt, ô nhiễm bị thổi khỏi khu vực.
+
+  # ═══════════════════════════════════════════════ ĐIỀU KIỆN LOẠI TRỪ
+  - id: MECH_NO_WET_REMOVAL
+    name: "Vắng mặt cơ chế rửa trôi"
+    name_en: "Absence of wet removal"
+    category: enabling_condition
+    effect: increase
+    triggers: { mode: all, rules: [R13] }
+    co_triggers: []
+    variables:
+      precip: { expected_shap: positive }
+    confidence_prior: 0.70
+    rag_query: >
+      dry spell absence of precipitation prolonged pollution episode
+      no wet scavenging accumulation
+    explanation_template: >
+      Không có mưa đáng kể trong 3 ngày qua (tổng {precip_sum_3d_mm:.1f} mm), nên cơ
+      chế rửa trôi không hoạt động — ô nhiễm tích tụ không được làm sạch.
+    notes: >
+      Đây là điều kiện CHO PHÉP, không phải nguyên nhân chủ động. Narrator phải diễn
+      đạt là "không được làm sạch", tuyệt đối không nói "không mưa gây ô nhiễm".
