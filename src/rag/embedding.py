@@ -17,7 +17,9 @@ lượng ngữ nghĩa — `hash_backend_warning()` nhắc điều đó ở mọi
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 import numpy as np
@@ -89,8 +91,7 @@ class HFEmbedder:
             from sentence_transformers import SentenceTransformer
         except ImportError as exc:  # pragma: no cover - cần requirements-embed.txt
             raise ImportError(
-                "Backend 'hf' cần sentence-transformers. Cài: "
-                "pip install -r requirements-embed.txt"
+                "Backend 'hf' cần sentence-transformers. Cài: pip install -r requirements-embed.txt"
             ) from exc
 
         self.model_name = model_name
@@ -109,6 +110,86 @@ class HFEmbedder:
         ).astype(np.float32)
 
 
+def normalize_query(text: str) -> str:
+    """Chuẩn hóa khoảng trắng của truy vấn.
+
+    Bắt buộc dùng CHUNG một hàm ở cả hai phía (lúc precompute trên Kaggle và lúc
+    tra cứu ở local), nếu không thì `rag_query` nhiều dòng trong YAML sẽ cho ra
+    hai khóa khác nhau và không bao giờ khớp.
+    """
+    return " ".join(text.split())
+
+
+class PrecomputedQueryEmbedder:
+    """Tra vector truy vấn từ bảng đã tính sẵn — KHÔNG cần torch ở máy local.
+
+    VÌ SAO LÀM ĐƯỢC
+    ---------------
+    Gated retrieval khiến tập truy vấn thành TẬP ĐÓNG: truy vấn không phải câu hỏi
+    của người dùng mà là `rag_query` của cơ chế, lấy từ `knowledge/mechanisms.yaml`.
+    Hiện có 12 cơ chế → đúng 12 truy vấn, biết trước hoàn toàn. Vậy nên chúng được
+    embed sẵn một lần (cùng model, cùng lượt với tài liệu) rồi đóng gói thành một
+    file ~150 KB.
+
+    Hệ quả kiến trúc: việc nặng (BGE-M3 trên GPU) chạy ở nơi có GPU; máy local chỉ
+    còn tra bảng và gọi Qdrant. Đây KHÔNG phải cách rút gọn chất lượng — vector tra
+    ra là vector BGE-M3 thật, giống hệt cái mà HFEmbedder sẽ tính.
+
+    RÀNG BUỘC
+    ---------
+    Sửa `rag_query` trong YAML → phải embed lại. Lớp này ném lỗi ngay khi gặp truy
+    vấn lạ thay vì trả vector rỗng: một truy vấn không khớp mà im lặng sẽ cho ra
+    "cơ chế này không có tài liệu hỗ trợ" — sai lệch đúng vào thứ khóa luận đang đo.
+    """
+
+    name = "precomputed"
+
+    def __init__(self, vectors_path: Path | str) -> None:
+        path = Path(vectors_path)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Chưa có file vector truy vấn: {path}\n"
+                "Sinh bằng notebook Kaggle (notebooks/kaggle_index_corpus.py), "
+                "tải về rồi đặt đường dẫn vào EGXAQ_QUERY_VECTORS."
+            )
+
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        self.model_name = payload.get("model", "unknown")
+        self.dim = int(payload["dim"])
+        self._table: dict[str, np.ndarray] = {
+            normalize_query(text): np.asarray(vec, dtype=np.float32)
+            for text, vec in payload["vectors"].items()
+        }
+        if not self._table:
+            raise ValueError(f"{path} không chứa vector nào.")
+
+    def encode(self, texts: list[str], is_query: bool = False) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, self.dim), dtype=np.float32)
+
+        if not is_query:
+            raise RuntimeError(
+                "PrecomputedQueryEmbedder chỉ phục vụ TRUY VẤN. Việc embed tài liệu "
+                "phải chạy trên Kaggle/GPU bằng backend 'hf' rồi nạp thẳng vào Qdrant."
+            )
+
+        vectors = []
+        for text in texts:
+            key = normalize_query(text)
+            if key not in self._table:
+                raise KeyError(
+                    f"Truy vấn chưa có vector tính sẵn:\n  {key[:100]}…\n"
+                    f"Bảng hiện có {len(self._table)} truy vấn (model {self.model_name}).\n"
+                    "`rag_query` trong mechanisms.yaml đã đổi? Chạy lại notebook Kaggle "
+                    "để sinh lại file vector."
+                )
+            vectors.append(self._table[key])
+        return np.vstack(vectors)
+
+    def known_queries(self) -> list[str]:
+        return sorted(self._table)
+
+
 def get_embedder(backend: str | None = None) -> Embedder:
     settings = get_settings()
     backend = backend or settings.embedding_backend
@@ -117,4 +198,6 @@ def get_embedder(backend: str | None = None) -> Embedder:
         return HashEmbedder(dim=settings.embedding_dim)
     if backend == "hf":
         return HFEmbedder(settings.embedding_model, dim=None)
+    if backend == "precomputed":
+        return PrecomputedQueryEmbedder(settings.query_vectors_path)
     raise ValueError(f"Embedding backend không hợp lệ: {backend!r}")

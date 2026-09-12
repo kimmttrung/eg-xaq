@@ -15,7 +15,14 @@ import argparse
 import _bootstrap  # noqa: F401
 from config import get_settings
 from kb import get_knowledge_base
-from rag.corpus import SEED_QUERIES, build_corpus, corpus_stats, save_corpus
+from rag.corpus import (
+    SEED_QUERIES,
+    build_corpus,
+    corpus_stats,
+    licensing_report,
+    save_corpus,
+    snowball,
+)
 
 
 def main() -> int:
@@ -24,6 +31,23 @@ def main() -> int:
     parser.add_argument("--year-min", type=int, default=2015)
     parser.add_argument("--oa-only", action="store_true", help="Chỉ lấy bài open-access")
     parser.add_argument("--out", default=None, help="Mặc định data/corpus/papers.jsonl")
+    parser.add_argument(
+        "--snowball",
+        action="store_true",
+        help="Mở rộng theo danh mục tham khảo của các bài hạt giống (tăng độ phủ)",
+    )
+    parser.add_argument(
+        "--snowball-seeds",
+        type=int,
+        default=30,
+        help="Số bài hạt giống dùng để snowball (mặc định 30)",
+    )
+    parser.add_argument(
+        "--snowball-min-citations",
+        type=int,
+        default=5,
+        help="Ứng viên snowball phải có ít nhất ngần này trích dẫn",
+    )
     args = parser.parse_args()
 
     settings = get_settings()
@@ -34,12 +58,33 @@ def main() -> int:
     ]
     queries = list(dict.fromkeys(mechanism_queries + SEED_QUERIES))
 
-    print(f"Truy vấn: {len(queries)} ({len(mechanism_queries)} từ cơ chế + {len(SEED_QUERIES)} nền)")
+    print(
+        f"Truy vấn: {len(queries)} ({len(mechanism_queries)} từ cơ chế + {len(SEED_QUERIES)} nền)"
+    )
     if not settings.openalex_mailto:
         print("⚠ Chưa đặt OPENALEX_MAILTO trong .env — sẽ bị giới hạn tốc độ nặng hơn.")
     print()
 
-    papers = build_corpus(queries, per_query=args.per_query, year_min=args.year_min)
+    papers = build_corpus(
+        queries,
+        per_query=args.per_query,
+        year_min=args.year_min,
+        with_references=args.snowball,
+    )
+
+    if args.snowball:
+        print()
+        seeds = sorted(papers, key=lambda p: p.cited_by_count, reverse=True)
+        found = snowball(
+            seeds,
+            year_min=args.year_min,
+            min_citations=args.snowball_min_citations,
+            max_seeds=args.snowball_seeds,
+        )
+        known = {(p.doi or p.paper_id).lower() for p in papers}
+        added = [p for p in found if (p.doi or p.paper_id).lower() not in known]
+        papers.extend(added)
+        print(f"  Snowball bổ sung {len(added)} bài mới (tổng {len(papers)}).")
 
     if args.oa_only:
         before = len(papers)
@@ -51,7 +96,13 @@ def main() -> int:
 
     print(f"\nĐã lưu: {out}")
     for key, value in corpus_stats(papers).items():
-        print(f"  {key:<18} {value}")
+        print(f"  {key:<20} {value}")
+
+    print("\n" + "=" * 60)
+    print("HỒ SƠ BẢN QUYỀN (đưa vào phụ lục khóa luận)")
+    print("=" * 60)
+    print(licensing_report(papers))
+
     print("\nBước tiếp theo: python scripts/index_corpus.py")
     return 0
 

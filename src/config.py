@@ -46,7 +46,15 @@ class Settings(BaseSettings):
     qdrant_collection: str = Field("egxaq_papers", alias="EGXAQ_QDRANT_COLLECTION")
 
     # ---------- embedding ----------
-    embedding_backend: Literal["hash", "hf"] = Field("hash", alias="EGXAQ_EMBEDDING_BACKEND")
+    # hash        = băm offline, chỉ để test
+    # hf          = sentence-transformers tại chỗ (cần torch, ~2GB)
+    # precomputed = tra vector truy vấn đã tính sẵn trên GPU ngoài (Kaggle/Colab).
+    #               Tài liệu đã được embed và nạp Qdrant từ phía GPU; máy local
+    #               không cần torch. Xem notebooks/kaggle_index_corpus.py
+    embedding_backend: Literal["hash", "hf", "precomputed"] = Field(
+        "hash", alias="EGXAQ_EMBEDDING_BACKEND"
+    )
+    query_vectors_file: str | None = Field(None, alias="EGXAQ_QUERY_VECTORS")
     embedding_model: str = Field("BAAI/bge-m3", alias="EGXAQ_EMBEDDING_MODEL")
     embedding_dim: int = Field(1024, alias="EGXAQ_EMBEDDING_DIM")
     reranker_model: str = Field("BAAI/bge-reranker-v2-m3", alias="EGXAQ_RERANKER_MODEL")
@@ -73,6 +81,13 @@ class Settings(BaseSettings):
     @property
     def corpus_dir(self) -> Path:
         return DATA_DIR / "corpus"
+
+    @property
+    def query_vectors_path(self) -> Path:
+        """Bảng vector truy vấn tính sẵn (backend `precomputed`)."""
+        if self.query_vectors_file:
+            return Path(self.query_vectors_file)
+        return DATA_DIR / "corpus" / "query_vectors.json"
 
 
 _settings: Settings | None = None

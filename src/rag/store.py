@@ -111,7 +111,9 @@ class QdrantStore:
             limit=limit,
             with_payload=True,
         ).points
-        return [SearchHit(chunk=_chunk_from_payload(r.payload), score=float(r.score)) for r in results]
+        return [
+            SearchHit(chunk=_chunk_from_payload(r.payload), score=float(r.score)) for r in results
+        ]
 
     def count(self) -> int:
         return self._client.count(self.collection, exact=True).count

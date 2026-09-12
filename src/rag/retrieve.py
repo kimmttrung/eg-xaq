@@ -88,12 +88,26 @@ class GatedRetriever:
     def attach(self, hypotheses: list[Hypothesis]) -> list[Hypothesis]:
         """Gán `citations` và `rag_support` cho từng giả thuyết liên quan.
 
-        Nhãn bằng chứng (E1, E2, ...) được cấp phát TOÀN CỤC: cùng một đoạn văn
-        chống lưng cho hai cơ chế thì mang cùng một nhãn. Nếu không, câu trả lời
-        sẽ có [E2] và [E5] trỏ về cùng một chỗ và người đọc tưởng là hai bằng
-        chứng độc lập.
+        MỘT BÀI BÁO = MỘT BẰNG CHỨNG
+        ----------------------------
+        Nhãn (E1, E2, ...) định danh một TÀI LIỆU, không phải một đoạn văn. Hai
+        đoạn khác nhau của cùng một bài chỉ sinh ra một nhãn duy nhất.
+
+        Vì sao không cấp nhãn theo đoạn: câu trả lời sẽ có [E3] và [E4] cùng trỏ
+        về một bài, người đọc tưởng là hai bằng chứng độc lập. Tệ hơn, thành phần
+        `độ_phủ` trong `_support` được thiết kế để đo ĐỒNG THUẬN KHOA HỌC — nhiều
+        tài liệu độc lập cùng nói một điều. Đếm hai đoạn của một bài thành hai
+        nguồn làm thổi phồng đúng con số đó, và `rag_support` đi thẳng vào công
+        thức chấm điểm.
+
+        Nhãn cũng được cấp phát TOÀN CỤC: một bài chống lưng cho hai cơ chế thì
+        mang cùng một nhãn ở cả hai chỗ, như cách một mục trong danh mục tham
+        khảo được nhiều chỗ trong bài trích tới.
+
+        Đoạn trích hiển thị cho mỗi nhãn là đoạn KHỚP NHẤT tìm được cho bài đó,
+        xét trên mọi cơ chế đã trích nó.
         """
-        labels: dict[str, Citation] = {}  # chunk_id -> Citation đã cấp nhãn
+        labels: dict[str, Citation] = {}  # khóa tài liệu -> Citation đã cấp nhãn
 
         for hypothesis in hypotheses:
             if hypothesis.verdict not in self.config.only_relevant_verdicts:
@@ -105,32 +119,59 @@ class GatedRetriever:
                 hypothesis.citations = []
                 continue
 
-            citations: list[Citation] = []
-            for hit in hits:
-                key = hit.chunk.chunk_id
-                if key in labels:
-                    citations.append(labels[key])
-                    continue
-                citation = Citation(
-                    evidence_id=f"E{len(labels) + 1}",
-                    doi=hit.chunk.doi,
-                    title=hit.chunk.title,
-                    authors=hit.chunk.authors,
-                    year=hit.chunk.year,
-                    venue=hit.chunk.venue,
-                    section=hit.chunk.section,
-                    text=hit.chunk.text,
-                    score=hit.score,
-                    url=hit.chunk.url,
-                    is_open_access=hit.chunk.is_open_access,
-                )
-                labels[key] = citation
-                citations.append(citation)
-
-            hypothesis.citations = citations
-            hypothesis.rag_support = self._support(hits)
+            best_per_paper = self._best_hit_per_paper(hits)
+            hypothesis.citations = [self._citation_for(hit, labels) for hit in best_per_paper]
+            hypothesis.rag_support = self._support(best_per_paper)
 
         return hypotheses
+
+    @staticmethod
+    def _paper_key(hit: SearchHit) -> str:
+        """Định danh TÀI LIỆU của một đoạn. DOI là chuẩn nhất; thiếu thì lùi về id."""
+        chunk = hit.chunk
+        return (chunk.doi or chunk.paper_id or chunk.title or "").strip().lower()
+
+    def _best_hit_per_paper(self, hits: list[SearchHit]) -> list[SearchHit]:
+        """Mỗi tài liệu giữ lại đúng một đoạn — đoạn khớp nhất.
+
+        `hits` đã xếp hạng giảm dần nên đoạn xuất hiện trước là đoạn tốt nhất của
+        bài đó; giữ thứ tự để trích dẫn vẫn theo độ liên quan.
+        """
+        best: dict[str, SearchHit] = {}
+        for hit in hits:
+            best.setdefault(self._paper_key(hit), hit)
+        return list(best.values())
+
+    def _citation_for(self, hit: SearchHit, labels: dict[str, Citation]) -> Citation:
+        """Cấp nhãn mới cho tài liệu, hoặc dùng lại nhãn đã cấp.
+
+        Nếu cơ chế sau tìm được đoạn khớp hơn của cùng bài, cập nhật đoạn trích tại
+        chỗ: nhãn giữ nguyên, nhưng đoạn văn hiển thị luôn là đoạn mạnh nhất.
+        """
+        key = self._paper_key(hit)
+        existing = labels.get(key)
+        if existing is not None:
+            if hit.score > existing.score:
+                existing.text = hit.chunk.text
+                existing.section = hit.chunk.section
+                existing.score = hit.score
+            return existing
+
+        citation = Citation(
+            evidence_id=f"E{len(labels) + 1}",
+            doi=hit.chunk.doi,
+            title=hit.chunk.title,
+            authors=hit.chunk.authors,
+            year=hit.chunk.year,
+            venue=hit.chunk.venue,
+            section=hit.chunk.section,
+            text=hit.chunk.text,
+            score=hit.score,
+            url=hit.chunk.url,
+            is_open_access=hit.chunk.is_open_access,
+        )
+        labels[key] = citation
+        return citation
 
     def _support(self, hits: list[SearchHit]) -> float:
         """Quy đổi kết quả truy xuất thành `rag_support` ∈ [0, 1].
@@ -140,6 +181,10 @@ class GatedRetriever:
         Hai thành phần vì hai thứ khác nhau đều đáng kể: một tài liệu khớp rất sát
         là bằng chứng mạnh, nhưng nhiều tài liệu độc lập cùng nói một điều thì đó
         là đồng thuận khoa học — điều mà một bài đơn lẻ không thay thế được.
+
+        ⚠ `hits` truyền vào ĐÃ phải gộp theo bài (`_best_hit_per_paper`), nếu không
+        `độ_phủ` sẽ đếm nhiều đoạn của một bài thành nhiều nguồn độc lập và thổi
+        phồng điểm.
         """
         if not hits:
             return 0.0
