@@ -83,8 +83,21 @@ def _stagnation_days(obs: Observation) -> float | None:
     có chuỗi ngày. Nếu gió trung bình 3 ngày đã dưới ngưỡng thì gần như chắc chắn
     cả 3 ngày đều tù đọng. Khi có dữ liệu chuỗi đầy đủ từ lab, thay bằng phép đếm
     thật (docs/02-data-contract.md F3).
+
+    ⚠ Hệ quả của phép xấp xỉ: giá trị trả về chỉ nhận được 0/1/2/3, nên R10
+    (threshold 1.0, saturation 4.0) có trần thực tế strength = 0.667 và không bao
+    giờ bão hòa. Đừng diễn giải điểm số của MECH_MULTIDAY_ACCUMULATION như thể nó
+    được chấm trên thang đầy đủ.
+
+    KHÔNG có biến gió nào → `None`, tuyệt đối không phải 0.0. INV-3: "không biết"
+    khác "biết là không". Trả 0.0 ở đây sẽ sinh ra một mẩu bằng chứng
+    ("Số ngày tù đọng: 0 ngày") tính từ chỗ không hề có dữ liệu.
     """
     threshold = 1.5  # m/s, khớp ngưỡng R2
+    winds = (obs.wind_speed_mean_3d_ms, obs.wind_speed_mean_2d_ms, obs.wind_speed_ms)
+    if all(wind is None for wind in winds):
+        return None
+
     if obs.wind_speed_mean_3d_ms is not None and obs.wind_speed_mean_3d_ms < threshold:
         return 3.0
     if obs.wind_speed_mean_2d_ms is not None and obs.wind_speed_mean_2d_ms < threshold:

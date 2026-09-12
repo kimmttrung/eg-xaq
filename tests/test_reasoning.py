@@ -6,15 +6,17 @@ làm vỡ chúng thì thay đổi đó đang phá luận điểm của khóa lu�
 
 from __future__ import annotations
 
+from datetime import date as Date
+
 import pytest
 
 from geoutils import angular_diff_deg, bearing_deg, is_upwind, uv_to_speed_dir
 from reasoning.consistency import assess_consistency
-from reasoning.derive import derive_features, pm25_to_aqi_vn, variable_lookup
+from reasoning.derive import derive_features, feature_context, pm25_to_aqi_vn, variable_lookup
 from reasoning.hypotheses import combine_rule_strengths, render_template
 from reasoning.rules import RuleEngine
 from reasoning.scoring import ScoringWeights, overall_confidence, score_hypotheses
-from schemas import Attribution, Confidence, FeatureContribution, Verdict
+from schemas import Attribution, Confidence, FeatureContribution, Observation, Verdict
 
 # =============================================================================
 # Chỉ số dẫn xuất
@@ -48,6 +50,25 @@ def test_derived_features_are_none_when_input_missing(observation_of):
     derived = derive_features(obs)
     assert derived.lapse_rate_c_per_km is None  # thiếu t850
     assert derived.ventilation_index_m2s is None  # thiếu gió
+    assert derived.stagnation_days is None  # không có biến gió nào
+
+
+def test_stagnation_days_is_none_without_any_wind_data():
+    """INV-3: "không biết" khác "biết là không".
+
+    Trả 0.0 ở đây từng sinh ra một mẩu bằng chứng có nhãn ("Số ngày tù đọng: 0
+    ngày") tính từ chỗ không hề có dữ liệu — đúng thứ mà một khóa luận về
+    evidence-grounding không được phép để lọt.
+    """
+    empty = Observation(lat=21.03, lon=105.85, date=Date(2024, 1, 15), step=0)
+    assert derive_features(empty).stagnation_days is None
+    assert feature_context(empty, derive_features(empty)) == []
+
+
+def test_stagnation_days_is_zero_when_wind_is_measured_and_strong():
+    """Có đo gió và gió mạnh → 0.0 là câu trả lời THẬT, không phải giá trị mặc định."""
+    windy = Observation(lat=21.03, lon=105.85, date=Date(2024, 1, 15), step=0, wind_speed_ms=6.0)
+    assert derive_features(windy).stagnation_days == 0.0
 
 
 @pytest.mark.parametrize(
