@@ -27,6 +27,8 @@ data/raw/
 data/interim/
 data/corpus/pdf/
 data/corpus/*.jsonl
+# Trung gian xuất sang Kaggle — sinh lại được bằng scripts/export_for_kaggle.py
+data/corpus/kaggle/
 *.nc
 *.grib
 *.grib2

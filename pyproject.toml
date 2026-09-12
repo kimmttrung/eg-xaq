@@ -13,6 +13,9 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 src = ["src", "tests", "scripts"]
+# notebooks/ chứa cell Kaggle/Colab với magic của IPython (`!pip install`) —
+# không phải Python hợp lệ, và cố ý như vậy. Lint chúng là vô nghĩa.
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
