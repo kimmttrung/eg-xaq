@@ -42,9 +42,11 @@ class RetrievalConfig:
     top_k: int = 3
 
     #: CỔNG CHẶN. Dưới ngưỡng này coi như không có bằng chứng.
-    #: Giá trị mặc định thận trọng; cần hiệu chỉnh trên bộ query có nhãn
-    #: (docs/06-evaluation.md §3) chứ không đoán.
-    min_score: float = 0.30
+    #: 0.569 — hiệu chỉnh sơ bộ 2026-09 bằng scripts/calibrate_rag_gate.py trên corpus
+    #: 1025 bài, embedding BGE-M3: đặt ngay trước điểm mà số cơ chế có trích dẫn tụt
+    #: nhanh, đã đọc tiêu đề để xác nhận. CHỈ đúng với BGE-M3 — đổi embedder phải hiệu
+    #: chỉnh lại. Còn phải kiểm bằng đường cong precision trên query có nhãn (docs/06 §3.2).
+    min_score: float = 0.569
 
     #: Chỉ truy xuất cho cơ chế thực sự đang được xét — tiết kiệm truy vấn và
     #: tránh nhét vào bundle những trích dẫn cho cơ chế không liên quan.
