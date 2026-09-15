@@ -97,7 +97,13 @@ khí tượng không?"*
 
 ### 3.2. Hiệu chỉnh `min_score` của cổng chặn RAG
 
-`RetrievalConfig.min_score = 0.30` hiện là **giá trị đoán**. Cách hiệu chỉnh đúng:
+**Đã hiệu chỉnh sơ bộ (2026-09): `min_score = 0.569`.** Làm bằng
+`scripts/calibrate_rag_gate.py` trên corpus 1025 bài, embedding BGE-M3: quét nhiều mức
+cổng, đặt ngay trước điểm mà số cơ chế có trích dẫn tụt nhanh, rồi đọc tiêu đề các bài
+quanh mức đó để xác nhận đúng cơ chế. Giá trị cũ 0.30 thuộc backend `hash` và không mang
+sang BGE-M3 được.
+
+Bước sơ bộ chưa đủ để báo cáo như kết quả. Cần kiểm lại bằng đường cong precision:
 
 1. Lấy ~30 truy vấn cơ chế, gán nhãn thủ công chunk nào thực sự liên quan.
 2. Quét `min_score` từ 0.1 đến 0.6.

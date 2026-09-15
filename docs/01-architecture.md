@@ -92,7 +92,7 @@ Docker Compose chỉ chạy `qdrant` (và `postgis` nếu cần layer GIS sau n�
 | Observation Service | `rasterio`/`xarray` đọc raster GFS của lab tại pixel | ⬜ chờ lab |
 | Attribution Service | `shap.TreeExplainer` trên 10 checkpoint XGBoost | ⬜ chờ lab |
 | Reasoning Engine | YAML rules + `networkx` KG | ✅ |
-| Scientific RAG | Qdrant + BGE-M3 embedding + bge-reranker | ✅ khung |
+| Scientific RAG | Qdrant Cloud + BGE-M3 (embed trên Kaggle GPU) + bge-reranker (chưa bật) | ✅ chạy thật |
 | Confidence | Logic tổng hợp có trọng số, hiệu chỉnh sau | ✅ |
 | Narrator | Claude API (`claude-sonnet-5`) + dryrun template | ✅ |
 

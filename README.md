@@ -126,12 +126,16 @@ Hà Nội. Khi có checkpoint XGBoost + raster GFS từ lab, chỉ cần viết 
 
 ## Bật Scientific RAG
 
+KB (corpus → chunk → embed BGE-M3 → Qdrant Cloud) được dựng trọn gói trên Kaggle bằng
+`notebooks/kaggle_build_kb.py`. Máy local không cần torch:
+
 ```powershell
-docker compose up -d qdrant            # http://localhost:6333/dashboard
-pip install -r requirements-embed.txt
-python scripts/build_corpus.py --per-query 20
-python scripts/index_corpus.py --embedding hf
+pip install qdrant-client
+# .env: EGXAQ_EMBEDDING_BACKEND=precomputed, EGXAQ_QDRANT_URL, EGXAQ_QDRANT_API_KEY
+python scripts/demo_explain.py --rag qdrant
 ```
+
+Chi tiết từng bước: [docs/05-rag.md](docs/05-rag.md) §12.
 
 ---
 
@@ -148,8 +152,9 @@ eg-xaq/
 │   ├── reasoning/        ← rule engine, KG, consistency, scoring  ← lõi, không có I/O
 │   ├── rag/              ← corpus, chunk, embed, Qdrant, gated retrieval
 │   └── narrator/         ← prompt ràng buộc + Claude API
-├── scripts/              ← demo_explain, build_corpus, index_corpus, calibrate_thresholds
-└── tests/                ← 98 test, chạy offline
+├── scripts/              ← demo_explain, build_corpus, calibrate_rag_gate, corpus_coverage, check_feature_map
+├── notebooks/            ← kaggle_build_kb.py: dựng KB trên GPU
+└── tests/                ← 136 test, chạy offline
 ```
 
 **Quy tắc kiến trúc**: `reasoning/` không được import `xgboost`, `shap`, `rasterio`,
@@ -184,16 +189,22 @@ sửa Python. Mỗi ngưỡng bắt buộc có trường `rationale` và `source
 | Knowledge base (13 rule, 12 cơ chế) | ✅ |
 | Reasoning engine + consistency + scoring | ✅ |
 | Knowledge Graph + xuất Mermaid | ✅ |
-| Scientific RAG (Qdrant, gated retrieval) | ✅ khung — corpus còn rỗng |
+| Scientific RAG | ✅ chạy thật — 1025 bài / 1101 chunk trên Qdrant Cloud, BGE-M3 |
+| Cổng RAG `min_score` | ✅ hiệu chỉnh sơ bộ (0.569) |
+| Hàng rào ánh xạ đặc trưng (`check_feature_map.py`) | ✅ sẵn sàng cho checkpoint lab |
 | Constrained narrator (dryrun + Claude API) | ✅ |
 | Pipeline + ablation A–E | ✅ |
 | **Data GFS + checkpoint XGBoost của lab** | ❌ **chờ mentor** |
-| Đánh giá / ablation định lượng | ⬜ |
+| Bộ episode gán nhãn + đánh giá định lượng | ⬜ |
+
+Chi tiết tiến độ và việc tiếp theo: [docs/07-roadmap.md](docs/07-roadmap.md).
 
 ---
 
 ## Giấy phép & bản quyền tài liệu
 
-Corpus RAG chỉ lưu **metadata + abstract** cho tài liệu đóng; full-text **chỉ với bài
-open-access** (xác định qua OpenAlex `is_oa` / Unpaywall). Ràng buộc này được thực thi bằng
+Corpus RAG lấy toàn bộ qua API công khai (OpenAlex), không cào website. Chỉ lưu
+**metadata + abstract**, trừ bài có **giấy phép mở tường minh** (Creative Commons / public
+domain) mới được lưu full-text. Bài *bronze OA* đọc được miễn phí nhưng không có giấy phép
+nên cũng chỉ lưu abstract. Ràng buộc này được thực thi bằng
 code trong `src/rag/models.py`, có unit test. Xem [docs/05-rag.md](docs/05-rag.md) §1.
