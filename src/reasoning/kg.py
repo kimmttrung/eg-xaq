@@ -37,9 +37,7 @@ def build_knowledge_graph(kb: KnowledgeBase) -> nx.DiGraph:
     for rule in kb.rules.values():
         rule_node = node_id("Rule", rule.id)
         var_node = node_id("Variable", rule.variable)
-        graph.add_node(
-            var_node, kind="Variable", label=rule.variable, unit=rule.unit
-        )
+        graph.add_node(var_node, kind="Variable", label=rule.variable, unit=rule.unit)
         graph.add_node(
             rule_node,
             kind="Rule",

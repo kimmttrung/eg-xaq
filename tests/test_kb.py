@@ -102,9 +102,7 @@ def test_dangling_rule_reference_is_caught(tmp_path, kb):
         "    variables: {blh: {expected_shap: positive}}\n    rag_query: q\n",
         encoding="utf-8",
     )
-    fmap.write_text(
-        "version: '1'\ncanonical_variables:\n  blh: {exact: [blh]}\n", encoding="utf-8"
-    )
+    fmap.write_text("version: '1'\ncanonical_variables:\n  blh: {exact: [blh]}\n", encoding="utf-8")
 
     with pytest.raises(KnowledgeError, match="R_TYPO"):
         load_knowledge_base(rules, mechs, fmap)

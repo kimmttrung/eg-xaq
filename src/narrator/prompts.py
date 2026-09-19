@@ -119,9 +119,7 @@ def _attribution_payload(bundle: EvidenceBundle) -> dict | None:
         "model_id": bundle.attribution.model_id,
         "base_value": bundle.attribution.base_value,
         "prediction": bundle.attribution.prediction,
-        "note": (
-            "Giá trị SHAP giải thích DỰ BÁO CỦA MÔ HÌNH, không phải nhân quả thực tế."
-        ),
+        "note": ("Giá trị SHAP giải thích DỰ BÁO CỦA MÔ HÌNH, không phải nhân quả thực tế."),
         "non_mechanistic_share": bundle.non_mechanistic_share,
         "top_features": [
             {

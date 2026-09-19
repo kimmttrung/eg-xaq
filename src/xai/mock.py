@@ -65,7 +65,11 @@ class MockAttributionProvider:
             # (tên đặc trưng, giá trị, đóng góp thô ∈ [-1, 1])
             ("blh_min_2d", obs.blh_min_2d_m or obs.blh_m, self._blh_signal(obs)),
             ("blh_mean", obs.blh_m, 0.6 * self._blh_signal(obs)),
-            ("wind_speed_mean_2d", obs.wind_speed_mean_2d_ms or obs.wind_speed_ms, self._wind_signal(obs)),
+            (
+                "wind_speed_mean_2d",
+                obs.wind_speed_mean_2d_ms or obs.wind_speed_ms,
+                self._wind_signal(obs),
+            ),
             ("wind_speed_max_3d", obs.wind_speed_mean_3d_ms, 0.5 * self._wind_signal(obs)),
             ("precip_sum_3d", obs.precip_sum_3d_mm, self._precip_signal(obs)),
             ("rh_mean", obs.rh_pct, self._rh_signal(obs)),
@@ -124,7 +128,11 @@ class MockAttributionProvider:
     @staticmethod
     def _wind_signal(obs: Observation) -> float:
         """Gió càng yếu so với 2.5 m/s thì càng đẩy PM2.5 lên."""
-        wind = obs.wind_speed_mean_2d_ms if obs.wind_speed_mean_2d_ms is not None else obs.wind_speed_ms
+        wind = (
+            obs.wind_speed_mean_2d_ms
+            if obs.wind_speed_mean_2d_ms is not None
+            else obs.wind_speed_ms
+        )
         return 0.0 if wind is None else _clip((2.5 - wind) / 2.5)
 
     @staticmethod

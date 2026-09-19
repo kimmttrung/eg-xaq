@@ -145,9 +145,7 @@ class ExplanationPipeline:
             data_evidence=result.data_evidence,
             attribution=attribution,
             shap_summary=attribution.top(self.config.shap_top_k) if attribution else [],
-            non_mechanistic_share=(
-                attribution.non_mechanistic_share() if attribution else None
-            ),
+            non_mechanistic_share=(attribution.non_mechanistic_share() if attribution else None),
             hypotheses=causes,
             suppressors=suppressors,
             conflicts=result.conflicts,

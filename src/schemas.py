@@ -141,7 +141,9 @@ class Attribution(BaseModel):
         Chỉ số này là một kết quả nghiên cứu: nó đo mức độ mô hình dựa vào mẫu
         không gian/thời gian thay vì cơ chế khí quyển (docs/02 §6 R2).
         """
-        return sum(abs(c.shap) for c in self.contributions if c.is_non_mechanistic) / self.total_abs()
+        return (
+            sum(abs(c.shap) for c in self.contributions if c.is_non_mechanistic) / self.total_abs()
+        )
 
 
 # =============================================================================
@@ -282,7 +284,9 @@ class EvidenceBundle(BaseModel):
     suppressors: list[Hypothesis] = Field(default_factory=list)
 
     conflicts: list[str] = Field(default_factory=list, description="Cảnh báo Rule ↔ SHAP mâu thuẫn")
-    missing: list[str] = Field(default_factory=list, description="Dữ liệu thiếu — narrator phải nêu")
+    missing: list[str] = Field(
+        default_factory=list, description="Dữ liệu thiếu — narrator phải nêu"
+    )
     config_flags: dict[str, Any] = Field(default_factory=dict, description="Cấu hình ablation")
 
     overall_confidence: Confidence = Confidence.INSUFFICIENT

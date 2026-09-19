@@ -92,6 +92,5 @@ class PopGISObservationProvider:
 
     def get(self, lat: float, lon: float, date: Date, step: int = 0) -> Observation:
         raise NotImplementedError(
-            "Chưa có endpoint PopGIS. Cần hỏi mentor: W1 và W2 trong "
-            "docs/02-data-contract.md §5."
+            "Chưa có endpoint PopGIS. Cần hỏi mentor: W1 và W2 trong docs/02-data-contract.md §5."
         )

@@ -65,8 +65,16 @@ class RuleSpec(BaseModel):
         """
         if value is None:
             return 0.0
-        span = self.threshold - self.saturation if self.direction == "below" else self.saturation - self.threshold
-        raw = (self.threshold - value) / span if self.direction == "below" else (value - self.threshold) / span
+        span = (
+            self.threshold - self.saturation
+            if self.direction == "below"
+            else self.saturation - self.threshold
+        )
+        raw = (
+            (self.threshold - value) / span
+            if self.direction == "below"
+            else (value - self.threshold) / span
+        )
         return max(0.0, min(1.0, raw))
 
 

@@ -41,9 +41,7 @@ def combine_rule_strengths(
     primary_values = [strength_of.get(rid, 0.0) for rid in primary_ids]
     primary = min(primary_values) if mechanism.triggers.mode == "all" else max(primary_values)
 
-    contributing = [
-        rid for rid, val in zip(primary_ids, primary_values, strict=True) if val > 0.0
-    ]
+    contributing = [rid for rid, val in zip(primary_ids, primary_values, strict=True) if val > 0.0]
 
     co_values = [strength_of.get(rid, 0.0) for rid in mechanism.co_triggers]
     co = sum(co_values) / len(co_values) if co_values else 0.0
@@ -98,15 +96,9 @@ def render_template(template: str, variables: dict[str, float | None]) -> str:
         return ""
 
     text = " ".join(template.split())
-    available = {
-        name: value
-        for name, value in variables.items()
-        if value is not None
-    }
+    available = {name: value for name, value in variables.items() if value is not None}
 
-    missing = {
-        name for name in _PLACEHOLDER.findall(text) if name not in available
-    }
+    missing = {name for name in _PLACEHOLDER.findall(text) if name not in available}
     for name in missing:
         text = re.sub(rf"\{{{name}(?::[^}}]*)?\}}", "(không có dữ liệu)", text)
 

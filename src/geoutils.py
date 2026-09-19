@@ -74,9 +74,21 @@ def compass_label_vi(deg: float | None) -> str:
     if deg is None:
         return "không rõ"
     labels = [
-        "Bắc", "Bắc Đông Bắc", "Đông Bắc", "Đông Đông Bắc",
-        "Đông", "Đông Đông Nam", "Đông Nam", "Nam Đông Nam",
-        "Nam", "Nam Tây Nam", "Tây Nam", "Tây Tây Nam",
-        "Tây", "Tây Tây Bắc", "Tây Bắc", "Bắc Tây Bắc",
+        "Bắc",
+        "Bắc Đông Bắc",
+        "Đông Bắc",
+        "Đông Đông Bắc",
+        "Đông",
+        "Đông Đông Nam",
+        "Đông Nam",
+        "Nam Đông Nam",
+        "Nam",
+        "Nam Tây Nam",
+        "Tây Nam",
+        "Tây Tây Nam",
+        "Tây",
+        "Tây Tây Bắc",
+        "Tây Bắc",
+        "Bắc Tây Bắc",
     ]
     return labels[int((deg % 360.0) / 22.5 + 0.5) % 16]
