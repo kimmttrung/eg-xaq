@@ -109,7 +109,9 @@ def _stagnation_days(obs: Observation) -> float | None:
 
 def derive_features(obs: Observation, inversion_layer_km: float = 1.5) -> DerivedFeatures:
     """Tính toàn bộ chỉ số dẫn xuất. Thiếu đầu vào → trường tương ứng là None."""
-    aqi, category = pm25_to_aqi_vn(obs.pm25_pred_ugm3)
+    # Giải thích một ngày đã qua (không có dự báo) thì dùng PM2.5 quan trắc.
+    pm25 = obs.pm25_pred_ugm3 if obs.pm25_pred_ugm3 is not None else obs.pm25_obs_ugm3
+    aqi, category = pm25_to_aqi_vn(pm25)
     return DerivedFeatures(
         lapse_rate_c_per_km=_lapse_rate(obs, inversion_layer_km),
         ventilation_index_m2s=_ventilation_index(obs),
@@ -147,6 +149,7 @@ def variable_lookup(obs: Observation, derived: DerivedFeatures) -> dict[str, flo
 _EVIDENCE_SPECS: list[tuple[str, str, str]] = [
     # (tên trường, nhãn tiếng Việt, đơn vị)
     ("pm25_pred_ugm3", "PM2.5 dự báo", "µg/m³"),
+    ("pm25_obs_ugm3", "PM2.5 quan trắc", "µg/m³"),
     ("blh_m", "Chiều cao lớp xáo trộn (PBLH)", "m"),
     ("wind_speed_ms", "Tốc độ gió 10 m", "m/s"),
     ("wind_dir_deg", "Hướng gió", "°"),
@@ -208,6 +211,8 @@ def _context_for(field: str, obs: Observation, derived: DerivedFeatures) -> str 
     if field == "blh_m" and derived.blh_anomaly_pct is not None:
         sign = "thấp hơn" if derived.blh_anomaly_pct < 0 else "cao hơn"
         return f"{sign} trung bình khí hậu {abs(derived.blh_anomaly_pct):.0f}%"
+    if field == "pm25_obs_ugm3" and obs.pm25_pred_ugm3 is None and derived.aqi_vn is not None:
+        return f"AQI Việt Nam ≈ {derived.aqi_vn} ({derived.aqi_category})"
     if field == "pm25_pred_ugm3" and derived.aqi_vn is not None:
         return f"AQI Việt Nam ≈ {derived.aqi_vn} ({derived.aqi_category})"
     if field == "lapse_rate_c_per_km":

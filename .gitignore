@@ -60,3 +60,6 @@ Thumbs.db
 desktop.ini
 *.swp
 CLAUDE.md
+
+# Kết quả chấm điểm — sinh lại được bằng scripts/score_episodes.py
+data/eval/results/

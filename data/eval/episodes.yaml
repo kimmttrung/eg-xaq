@@ -1,0 +1,745 @@
+# =============================================================================
+# Bộ episode đánh giá EG-XAQ — PHIẾU GÁN NHÃN
+# =============================================================================
+# Đọc data/eval/LABELING.md trước khi gán nhãn.
+#
+# Ngày được chọn tự động theo PM2.5 quan trắc: dataset_train.csv, 769 ngày (2022-01-04 → 2024-12-11)
+# Nhãn nguyên nhân PHẢI lấy từ nguồn độc lập (CEM, bài báo, bản tin có chuyên gia).
+# Không tìm được nguồn → đổi status thành rejected và ghi reject_reason.
+#
+# ⚠ Hỏi mentor (M10): các ngày này có nằm trong tập huấn luyện của mô hình lab không.
+#
+# Cơ chế hợp lệ (↑ làm tăng PM2.5, ↓ làm giảm):
+#   MECH_LOW_PBLH                  ↑ Tích tụ do lớp xáo trộn thấp
+#   MECH_STAGNATION                ↑ Tù đọng do gió yếu
+#   MECH_INVERSION                 ↑ Nghịch nhiệt giữ ô nhiễm
+#   MECH_POOR_VENTILATION          ↑ Thông thoáng khí quyển kém
+#   MECH_MULTIDAY_ACCUMULATION     ↑ Tích tụ cộng dồn nhiều ngày
+#   MECH_ANTICYCLONIC              ↑ Chìm lún dưới cao áp
+#   MECH_BIOMASS_TRANSPORT         ↑ Vận chuyển khói đốt sinh khối
+#   MECH_SOURCE_SECTOR_TRANSPORT   ↑ Vận chuyển từ cụm nguồn thượng nguồn gió
+#   MECH_SECONDARY_AEROSOL         ↑ Sol khí thứ cấp & hút ẩm phình to
+#   MECH_WET_DEPOSITION            ↓ Rửa trôi bởi mưa
+#   MECH_ADVECTION_CLEANSING       ↓ Gió mạnh thổi sạch
+#   MECH_NO_WET_REMOVAL            ↑ Vắng mặt cơ chế rửa trôi
+
+episodes:
+  - episode_id: hn-2022-01-04
+    status: todo              # todo | labeled | rejected
+    date: 2022-01-04
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 127
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-01-15
+    status: todo              # todo | labeled | rejected
+    date: 2022-01-15
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 106
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-02-02
+    status: todo              # todo | labeled | rejected
+    date: 2022-02-02
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 13.1
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-02-13
+    status: todo              # todo | labeled | rejected
+    date: 2022-02-13
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 11.8
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-02-20
+    status: todo              # todo | labeled | rejected
+    date: 2022-02-20
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 6.96
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-03-03
+    status: todo              # todo | labeled | rejected
+    date: 2022-03-03
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 63.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-08-11
+    status: todo              # todo | labeled | rejected
+    date: 2022-08-11
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 14.9
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-08-22
+    status: todo              # todo | labeled | rejected
+    date: 2022-08-22
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 16.3
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-09-14
+    status: todo              # todo | labeled | rejected
+    date: 2022-09-14
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 66.6
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-11-03
+    status: todo              # todo | labeled | rejected
+    date: 2022-11-03
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 96.9
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-11-08
+    status: todo              # todo | labeled | rejected
+    date: 2022-11-08
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 94.2
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-12-01
+    status: todo              # todo | labeled | rejected
+    date: 2022-12-01
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 18.3
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-12-16
+    status: todo              # todo | labeled | rejected
+    date: 2022-12-16
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 141
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2022-12-22
+    status: todo              # todo | labeled | rejected
+    date: 2022-12-22
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 112
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-01-04
+    status: todo              # todo | labeled | rejected
+    date: 2023-01-04
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 97.2
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-01-10
+    status: todo              # todo | labeled | rejected
+    date: 2023-01-10
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 117
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-01-21
+    status: todo              # todo | labeled | rejected
+    date: 2023-01-21
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 128
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-01-30
+    status: todo              # todo | labeled | rejected
+    date: 2023-01-30
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 114
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-03-31
+    status: todo              # todo | labeled | rejected
+    date: 2023-03-31
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 71.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-04-10
+    status: todo              # todo | labeled | rejected
+    date: 2023-04-10
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 68.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-04-21
+    status: todo              # todo | labeled | rejected
+    date: 2023-04-21
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 68.1
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-06-28
+    status: todo              # todo | labeled | rejected
+    date: 2023-06-28
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 15.9
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-07-09
+    status: todo              # todo | labeled | rejected
+    date: 2023-07-09
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 2.04
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-09-14
+    status: todo              # todo | labeled | rejected
+    date: 2023-09-14
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 15.1
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-10-18
+    status: todo              # todo | labeled | rejected
+    date: 2023-10-18
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 87.2
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-10-27
+    status: todo              # todo | labeled | rejected
+    date: 2023-10-27
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 91.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-12-19
+    status: todo              # todo | labeled | rejected
+    date: 2023-12-19
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 19.2
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2023-12-26
+    status: todo              # todo | labeled | rejected
+    date: 2023-12-26
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 117
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-01-12
+    status: todo              # todo | labeled | rejected
+    date: 2024-01-12
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 20.1
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-01-22
+    status: todo              # todo | labeled | rejected
+    date: 2024-01-22
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 16.8
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-01-31
+    status: todo              # todo | labeled | rejected
+    date: 2024-01-31
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 97.9
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-02-24
+    status: todo              # todo | labeled | rejected
+    date: 2024-02-24
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa khô — ứng viên gió mùa Đông Bắc
+    pm25_obs_ugm3: 19.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-03-05
+    status: todo              # todo | labeled | rejected
+    date: 2024-03-05
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 130
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-03-12
+    status: todo              # todo | labeled | rejected
+    date: 2024-03-12
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 76.1
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-04-27
+    status: todo              # todo | labeled | rejected
+    date: 2024-04-27
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 67.9
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-06-24
+    status: todo              # todo | labeled | rejected
+    date: 2024-06-24
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 16.3
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-07-24
+    status: todo              # todo | labeled | rejected
+    date: 2024-07-24
+    group: clean               # chọn vì: PM2.5 thấp nhất mùa mưa — ứng viên rửa trôi
+    pm25_obs_ugm3: 13.9
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay không khí Hà Nội trong lành?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-09-15
+    status: todo              # todo | labeled | rejected
+    date: 2024-09-15
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 68.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-10-05
+    status: todo              # todo | labeled | rejected
+    date: 2024-10-05
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 79.1
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-10-10
+    status: todo              # todo | labeled | rejected
+    date: 2024-10-10
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 99
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-10-25
+    status: todo              # todo | labeled | rejected
+    date: 2024-10-25
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 70.5
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-10-31
+    status: todo              # todo | labeled | rejected
+    date: 2024-10-31
+    group: polluted_transition # chọn vì: PM2.5 cao nhất tháng 3–4, 9–10
+    pm25_obs_ugm3: 94.2
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-11-11
+    status: todo              # todo | labeled | rejected
+    date: 2024-11-11
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 103
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-11-25
+    status: todo              # todo | labeled | rejected
+    date: 2024-11-25
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 83.7
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low
+
+  - episode_id: hn-2024-12-10
+    status: todo              # todo | labeled | rejected
+    date: 2024-12-10
+    group: polluted_winter     # chọn vì: PM2.5 cao nhất tháng 11–2
+    pm25_obs_ugm3: 117
+    expected_outcome:         # cause | clean | insufficient
+    questions:
+      - Vì sao hôm nay Hà Nội ô nhiễm nặng?
+    primary_mechanisms: []
+    contributing_mechanisms: []
+    excluded_mechanisms: []
+    rationale: ""
+    sources: []               # - {type: cem_report, citation: ..., locator: ...}
+    annotator: ""
+    label_confidence:         # high | medium | low

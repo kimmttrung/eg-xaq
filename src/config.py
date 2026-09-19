@@ -28,10 +28,16 @@ class Settings(BaseSettings):
     )
 
     # ---------- nguồn dữ liệu ----------
-    data_backend: Literal["mock", "lab"] = Field("mock", alias="EGXAQ_DATA_BACKEND")
+    data_backend: Literal["mock", "lab", "era5"] = Field("mock", alias="EGXAQ_DATA_BACKEND")
     xai_backend: Literal["mock", "lab"] = Field("mock", alias="EGXAQ_XAI_BACKEND")
     lab_model_dir: str | None = Field(None, alias="EGXAQ_LAB_MODEL_DIR")
     lab_raster_dir: str | None = Field(None, alias="EGXAQ_LAB_RASTER_DIR")
+
+    # ---------- ERA5 (phương án dự phòng khi chưa có GFS của lab) ----------
+    era5_daily_csv: str | None = Field(None, alias="EGXAQ_ERA5_DAILY_CSV")
+    era5_supplement_csv: str | None = Field(None, alias="EGXAQ_ERA5_SUPPLEMENT_CSV")
+    firms_csv: str | None = Field(None, alias="EGXAQ_FIRMS_CSV")
+    pm25_obs_csv: str | None = Field(None, alias="EGXAQ_PM25_OBS_CSV")
 
     # ---------- narrator ----------
     narrator_backend: Literal["dryrun", "anthropic"] = Field(

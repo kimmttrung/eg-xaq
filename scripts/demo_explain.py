@@ -17,6 +17,7 @@ import _bootstrap  # noqa: F401  (phải import trước mọi module của dự
 from data.mock import EPISODES, HANOI_LAT, HANOI_LON, MockObservationProvider
 from narrator.narrator import DryRunNarrator, get_narrator
 from pipeline import ExplanationPipeline, PipelineConfig
+from rag.retrieve import build_retriever
 from reasoning.kg import to_mermaid
 from xai.mock import MockAttributionProvider
 
@@ -75,7 +76,7 @@ def main() -> int:
     observations = MockObservationProvider(episode=args.episode)
     date = MockObservationProvider.default_date(args.episode)
 
-    retriever = _build_retriever(args.rag, args.rag_min_score)
+    retriever = build_retriever(args.rag, args.rag_min_score)
 
     pipeline = ExplanationPipeline(
         observation_provider=observations,
@@ -126,42 +127,6 @@ def main() -> int:
         )
     )
     return 0
-
-
-def _build_retriever(mode: str, min_score: float | None):
-    """Dựng tầng RAG cho demo. `off` → None (pipeline chạy như cấu hình A–D).
-
-    Chế độ `memory` nạp thẳng `data/corpus/papers.jsonl` vào RAM. Nó KHÔNG phải
-    backend chính thức — chỉ để xem tầng RAG hoạt động mà chưa phải dựng Docker.
-    Số liệu cho khóa luận phải chạy trên `qdrant` với embedding `hf`.
-    """
-    if mode == "off":
-        return None
-
-    from config import get_settings
-    from rag.chunking import chunk_paper
-    from rag.corpus import load_corpus
-    from rag.embedding import get_embedder, hash_backend_warning
-    from rag.retrieve import GatedRetriever, RetrievalConfig
-    from rag.store import InMemoryStore, get_vector_store
-
-    settings = get_settings()
-    embedder = get_embedder()
-    if embedder.name == "hash":
-        print(hash_backend_warning())
-
-    if mode == "qdrant":
-        store = get_vector_store("qdrant")
-    else:
-        corpus_path = settings.corpus_dir / "papers.jsonl"
-        papers = list(load_corpus(corpus_path))
-        chunks = [c for p in papers for c in chunk_paper(p)]
-        store = InMemoryStore()
-        store.upsert(chunks, embedder.encode([c.text for c in chunks], is_query=False))
-        print(f"RAG (memory): {len(papers)} bài → {store.count()} chunk từ {corpus_path}")
-
-    config = RetrievalConfig(min_score=min_score) if min_score is not None else RetrievalConfig()
-    return GatedRetriever(store, embedder, config=config)
 
 
 if __name__ == "__main__":

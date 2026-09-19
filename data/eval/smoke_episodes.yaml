@@ -1,0 +1,97 @@
+# =============================================================================
+# Episode TỔNG HỢP — chỉ để kiểm thử bộ chấm điểm
+# =============================================================================
+# Mỗi mục ứng với một kịch bản trong src/data/mock.py. Nhãn ở đây là nhãn THEO THIẾT
+# KẾ kịch bản, không phải nhãn đọc từ nguồn — nên chúng KHÔNG được dùng để lấy số
+# liệu cho khóa luận. Tác dụng duy nhất: xác nhận scripts/score_episodes.py chấm đúng.
+#
+# Sửa kịch bản trong mock.py hoặc ngưỡng trong rules.yaml mà làm các nhãn này lệch,
+# tests/test_evaluation.py sẽ báo.
+
+episodes:
+  - episode_id: smoke-winter-inversion
+    synthetic: true
+    mock_episode: winter_inversion
+    date: 2024-01-15
+    group: polluted_winter
+    expected_outcome: cause
+    questions: ["Vì sao hôm nay Hà Nội ô nhiễm nặng dù không có nguồn thải bất thường?"]
+    primary_mechanisms: [MECH_INVERSION, MECH_LOW_PBLH, MECH_POOR_VENTILATION]
+    contributing_mechanisms: [MECH_STAGNATION, MECH_MULTIDAY_ACCUMULATION, MECH_NO_WET_REMOVAL, MECH_ANTICYCLONIC]
+    excluded_mechanisms: [MECH_WET_DEPOSITION, MECH_ADVECTION_CLEANSING, MECH_BIOMASS_TRANSPORT]
+    rationale: "Thiết kế kịch bản: t850 > t2m, PBLH 320 m, gió 0.8 m/s, không mưa, không điểm cháy."
+    sources: [{type: synthetic_design, citation: "src/data/mock.py EPISODES['winter_inversion']"}]
+    annotator: synthetic
+    label_confidence: high
+
+  - episode_id: smoke-biomass-burning
+    synthetic: true
+    mock_episode: biomass_burning
+    date: 2024-04-08
+    group: polluted_transition
+    expected_outcome: cause
+    questions: ["Vì sao chất lượng không khí Hà Nội xấu đột ngột hôm nay?"]
+    primary_mechanisms: [MECH_BIOMASS_TRANSPORT]
+    contributing_mechanisms: [MECH_POOR_VENTILATION, MECH_NO_WET_REMOVAL]
+    excluded_mechanisms: [MECH_INVERSION, MECH_WET_DEPOSITION, MECH_ADVECTION_CLEANSING, MECH_STAGNATION]
+    rationale: "Thiết kế kịch bản: 42 điểm cháy thượng nguồn gió, lapse rate bình thường, gió 2.2 m/s."
+    sources: [{type: synthetic_design, citation: "src/data/mock.py EPISODES['biomass_burning']"}]
+    annotator: synthetic
+    label_confidence: high
+
+  - episode_id: smoke-cold-surge-clean
+    synthetic: true
+    mock_episode: cold_surge_clean
+    date: 2024-12-03
+    group: clean
+    expected_outcome: clean
+    questions: ["Vì sao hôm nay không khí Hà Nội lại trong lành?"]
+    primary_mechanisms: [MECH_ADVECTION_CLEANSING]
+    excluded_mechanisms: [MECH_INVERSION, MECH_LOW_PBLH, MECH_STAGNATION, MECH_POOR_VENTILATION, MECH_BIOMASS_TRANSPORT]
+    rationale: "Thiết kế kịch bản: gió 6.4 m/s, PBLH 1350 m, chỉ số thông gió cao."
+    sources: [{type: synthetic_design, citation: "src/data/mock.py EPISODES['cold_surge_clean']"}]
+    annotator: synthetic
+    label_confidence: high
+
+  - episode_id: smoke-rain-washout
+    synthetic: true
+    mock_episode: rain_washout
+    date: 2024-05-20
+    group: clean
+    expected_outcome: clean
+    questions: ["Mưa hôm nay có làm sạch không khí không?"]
+    primary_mechanisms: [MECH_WET_DEPOSITION]
+    excluded_mechanisms: [MECH_NO_WET_REMOVAL, MECH_INVERSION, MECH_BIOMASS_TRANSPORT, MECH_STAGNATION]
+    rationale: "Thiết kế kịch bản: mưa 18.5 mm trong ngày, 34 mm trong 3 ngày."
+    sources: [{type: synthetic_design, citation: "src/data/mock.py EPISODES['rain_washout']"}]
+    annotator: synthetic
+    label_confidence: high
+
+  - episode_id: smoke-humid-stagnant
+    synthetic: true
+    mock_episode: humid_stagnant
+    date: 2024-03-05
+    group: polluted_transition
+    expected_outcome: cause
+    questions: ["Trời nồm ẩm thế này thì bụi mịn ra sao?"]
+    primary_mechanisms: [MECH_SECONDARY_AEROSOL, MECH_STAGNATION]
+    contributing_mechanisms: [MECH_LOW_PBLH, MECH_POOR_VENTILATION, MECH_MULTIDAY_ACCUMULATION, MECH_NO_WET_REMOVAL]
+    excluded_mechanisms: [MECH_WET_DEPOSITION, MECH_ADVECTION_CLEANSING, MECH_INVERSION]
+    rationale: "Thiết kế kịch bản: RH 93%, gió 1.1 m/s kéo dài 3 ngày, không nghịch nhiệt."
+    sources: [{type: synthetic_design, citation: "src/data/mock.py EPISODES['humid_stagnant']"}]
+    annotator: synthetic
+    label_confidence: medium
+
+  - episode_id: smoke-sparse-data
+    synthetic: true
+    mock_episode: sparse_data
+    date: 2024-02-10
+    group: other
+    expected_outcome: cause
+    questions: ["Vì sao hôm nay Hà Nội ô nhiễm?"]
+    primary_mechanisms: [MECH_LOW_PBLH]
+    rationale: "Thiết kế kịch bản: chỉ có PBLH 480 m; gió, mưa, nhiệt mực cao đều thiếu."
+    sources: [{type: synthetic_design, citation: "src/data/mock.py EPISODES['sparse_data']"}]
+    annotator: synthetic
+    label_confidence: low
+    notes: "Kiểm tra fail-safe: hệ thống phải hạ độ tin cậy và nêu rõ phần không kiểm tra được."

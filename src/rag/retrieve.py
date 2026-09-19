@@ -209,3 +209,48 @@ class NullRetriever:
             hypothesis.rag_support = 0.0
             hypothesis.citations = []
         return hypotheses
+
+
+def build_retriever(mode: str, min_score: float | None = None) -> GatedRetriever | None:
+    """Dựng tầng RAG theo chế độ `off | qdrant | memory`. `off` → None (tắt RAG).
+
+    - `qdrant` — backend chính thức; số liệu khóa luận chạy trên chế độ này.
+    - `memory` — nạp `data/corpus/papers.jsonl` vào RAM và EMBED TÀI LIỆU TẠI CHỖ.
+      Vì vậy nó KHÔNG chạy được với backend `precomputed` (bảng đó chỉ có vector truy
+      vấn), và với backend `hash` thì cổng hiệu chỉnh cho BGE-M3 không còn ý nghĩa.
+      Chỉ dùng để thử đường ống, không lấy số liệu, không làm đường lui cho demo.
+    """
+    if mode == "off":
+        return None
+    if mode not in {"qdrant", "memory"}:
+        raise ValueError(f"Chế độ RAG không hợp lệ: {mode!r} (off | qdrant | memory)")
+
+    from config import get_settings
+
+    from .chunking import chunk_paper
+    from .corpus import load_corpus
+    from .embedding import get_embedder, hash_backend_warning
+    from .store import InMemoryStore, get_vector_store
+
+    embedder = get_embedder()
+    if embedder.name == "hash":
+        print(hash_backend_warning())
+
+    if mode == "qdrant":
+        store = get_vector_store("qdrant")
+    else:
+        if embedder.name == "precomputed":
+            raise RuntimeError(
+                "--rag memory phải embed tài liệu tại chỗ, nhưng backend 'precomputed' chỉ "
+                "tra được vector truy vấn. Dùng --rag qdrant (Qdrant Cloud, hoặc Qdrant local "
+                "khôi phục từ snapshot)."
+            )
+        corpus_path = get_settings().corpus_dir / "papers.jsonl"
+        papers = list(load_corpus(corpus_path))
+        chunks = [c for p in papers for c in chunk_paper(p)]
+        store = InMemoryStore()
+        store.upsert(chunks, embedder.encode([c.text for c in chunks], is_query=False))
+        print(f"RAG (memory): {len(papers)} bài → {store.count()} chunk từ {corpus_path}")
+
+    config = RetrievalConfig(min_score=min_score) if min_score is not None else RetrievalConfig()
+    return GatedRetriever(store, embedder, config=config)

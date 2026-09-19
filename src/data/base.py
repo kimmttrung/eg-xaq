@@ -6,6 +6,7 @@ Xem docs/02-data-contract.md §7.1 để biết chính xác từng trường ph�
 from __future__ import annotations
 
 from datetime import date as Date
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from config import get_settings
@@ -25,6 +26,13 @@ class ObservationProvider(Protocol):
     name: str
 
     def get(self, lat: float, lon: float, date: Date, step: int = 0) -> Observation: ...
+
+
+class ObservationUnavailable(LookupError):
+    """Không có dữ liệu cho đúng ngày / địa điểm / bước được hỏi.
+
+    Đây là lỗi cấu hình, không phải "thiếu một biến". Thiếu biến thì trả `None`
+    trong Observation (INV-3)."""
 
 
 class ProviderNotAvailable(RuntimeError):
@@ -49,5 +57,33 @@ def get_observation_provider(backend: str | None = None) -> ObservationProvider:
                 "Xem docs/02-data-contract.md §8."
             ) from exc
         return LabRasterObservationProvider()
+
+    if backend == "era5":
+        from config import PROJECT_ROOT
+        from kb import get_knowledge_base
+
+        from .era5 import ERA5DailyObservationProvider
+
+        settings = get_settings()
+        if not settings.era5_daily_csv:
+            raise ProviderNotAvailable(
+                "Backend 'era5' cần EGXAQ_ERA5_DAILY_CSV (ví dụ ../era5/features_daily.csv)."
+            )
+
+        def resolve(raw: str | None) -> Path | None:
+            if not raw:
+                return None
+            path = Path(raw)
+            return path if path.is_absolute() else PROJECT_ROOT / path
+
+        config = get_knowledge_base().config
+        return ERA5DailyObservationProvider(
+            resolve(settings.era5_daily_csv),
+            supplement_csv=resolve(settings.era5_supplement_csv),
+            firms_csv=resolve(settings.firms_csv),
+            pm25_csv=resolve(settings.pm25_obs_csv),
+            upwind_sector_deg=config.get("upwind_sector_deg", 90.0),
+            upwind_radius_km=config.get("upwind_radius_km", 300.0),
+        )
 
     raise ProviderNotAvailable(f"Backend dữ liệu không hợp lệ: {backend!r}")

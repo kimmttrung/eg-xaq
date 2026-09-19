@@ -16,7 +16,7 @@ trong bằng chứng, không hơn". So sánh hai đầu ra cho ta một baseline
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 from config import get_settings
 from schemas import Answer, Confidence, EvidenceBundle, Hypothesis, Verdict
@@ -34,6 +34,30 @@ class Narrator(Protocol):
 # =============================================================================
 # DryRun — template thuần Python
 # =============================================================================
+
+
+def is_clean_day(bundle: EvidenceBundle) -> bool:
+    """Có nên kể câu chuyện "vì sao sạch" thay vì "vì sao bẩn"?
+
+    Hai điều kiện, thỏa một là đủ: AQI ở mức tốt/trung bình, hoặc cơ chế loại bỏ mạnh
+    hơn nguyên nhân mạnh nhất. Dùng chung cho narrator và bộ chấm điểm
+    (`evaluation.predicted_outcome`) — một định nghĩa duy nhất, để metric đo đúng thứ
+    người dùng đọc được.
+    """
+    if not bundle.suppressors:
+        return False
+    aqi = bundle.derived.aqi_vn
+    if aqi is not None and aqi <= 100:
+        return True
+    top_cause = bundle.hypotheses[0].score if bundle.hypotheses else 0.0
+    return bundle.suppressors[0].score > top_cause
+
+
+def story_of(bundle: EvidenceBundle) -> Literal["cause", "clean", "insufficient"]:
+    """Câu chuyện câu trả lời kể: vì sao bẩn, vì sao sạch, hay không đủ căn cứ."""
+    if not bundle.hypotheses and not bundle.suppressors:
+        return "insufficient"
+    return "clean" if is_clean_day(bundle) else "cause"
 
 
 class DryRunNarrator:
@@ -68,7 +92,9 @@ class DryRunNarrator:
                 f"hoặc dữ liệu cần thiết bị thiếu."
             )
 
-        pm25 = bundle.observation.pm25_pred_ugm3
+        obs = bundle.observation
+        pm25 = obs.pm25_pred_ugm3 if obs.pm25_pred_ugm3 is not None else obs.pm25_obs_ugm3
+        kind = f"dự báo t+{obs.step}" if obs.pm25_pred_ugm3 is not None else "quan trắc"
         aqi = bundle.derived.aqi_vn
         level = f"PM2.5 ≈ {pm25:.0f} µg/m³" if pm25 is not None else "Mức PM2.5 không rõ"
         if aqi is not None:
@@ -76,14 +102,13 @@ class DryRunNarrator:
 
         lines = [
             header,
-            f"{level} tại {bundle.place_label} ngày {bundle.observation.date} "
-            f"(dự báo t+{bundle.observation.step}).",
+            f"{level} tại {bundle.place_label} ngày {obs.date} ({kind}).",
         ]
 
         # Ngày không khí tốt thì câu hỏi thực sự là "vì sao SẠCH", nên phải mở đầu
         # bằng cơ chế LOẠI BỎ. Mở đầu bằng "nguyên nhân chủ đạo" trong khi AQI 35
         # là sai về mặt diễn đạt, dù mọi con số bên dưới đều đúng.
-        if self._is_clean_day(bundle):
+        if is_clean_day(bundle):
             lead = bundle.suppressors[0]
             lines.append(
                 f"Không khí ở mức tốt. Cơ chế chủ đạo: **{lead.name}** "
@@ -106,21 +131,6 @@ class DryRunNarrator:
             sup = bundle.suppressors[0]
             lines.append(f"Cơ chế đang làm giảm nồng độ: {sup.name.lower()} — {sup.narrative}")
         return "\n".join(lines)
-
-    @staticmethod
-    def _is_clean_day(bundle: EvidenceBundle) -> bool:
-        """Có nên kể câu chuyện 'vì sao sạch' thay vì 'vì sao bẩn'?
-
-        Hai điều kiện, thỏa một là đủ: AQI ở mức tốt/trung bình, hoặc cơ chế loại bỏ
-        mạnh hơn nguyên nhân mạnh nhất.
-        """
-        if not bundle.suppressors:
-            return False
-        aqi = bundle.derived.aqi_vn
-        if aqi is not None and aqi <= 100:
-            return True
-        top_cause = bundle.hypotheses[0].score if bundle.hypotheses else 0.0
-        return bundle.suppressors[0].score > top_cause
 
     def _data_section(self, bundle: EvidenceBundle) -> str:
         if not bundle.data_evidence:
@@ -240,9 +250,7 @@ class AnthropicNarrator:
         try:
             import anthropic
         except ImportError as exc:  # pragma: no cover
-            raise ImportError(
-                "Narrator 'anthropic' cần SDK. Cài: pip install anthropic"
-            ) from exc
+            raise ImportError("Narrator 'anthropic' cần SDK. Cài: pip install anthropic") from exc
 
         self._anthropic = anthropic
         self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
