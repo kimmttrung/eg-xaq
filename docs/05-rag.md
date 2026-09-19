@@ -312,5 +312,11 @@ python scripts/demo_explain.py --rag qdrant
 **Tên biến khác nhau ở hai nơi:** Kaggle Secrets không có tiền tố (`QDRANT_URL`), `.env` có
 tiền tố (`EGXAQ_QDRANT_URL`). Đừng dán API key vào notebook hay vào chat.
 
-Đường lui không cần mạng: `python scripts/demo_explain.py --rag memory` nạp thẳng
-`papers.jsonl` vào RAM (chỉ để demo, không lấy số liệu).
+**Đường lui không cần mạng (ngày bảo vệ):** tạo snapshot collection `egxaq_papers` trên
+Qdrant Cloud → tải về → khôi phục vào Qdrant chạy local (`docker compose up -d qdrant`) →
+đặt `EGXAQ_QDRANT_URL=http://localhost:6333` và chạy `--rag qdrant` như bình thường. Vector
+và cổng giữ nguyên nên kết quả không đổi.
+
+`--rag memory` **không** làm đường lui được: nó phải embed tài liệu ngay tại máy, mà backend
+`precomputed` chỉ có vector truy vấn; còn với `hash` thì cổng 0.569 (hiệu chỉnh cho BGE-M3)
+chặn hết. `build_retriever` báo lỗi rõ trong trường hợp này.

@@ -3,9 +3,8 @@
 > Chương đánh giá quyết định điểm số của khóa luận. Hội đồng sẽ không hỏi *"giao diện
 > có đẹp không?"* — họ sẽ hỏi **"làm sao minh chứng hệ thống này đáng tin hơn ChatGPT?"**
 
-Trạng thái: ⬜ **CHƯA TRIỂN KHAI**. Hạ tầng đã sẵn sàng: `PipelineConfig.ablation()`
-chạy được cả 5 cấu hình từ ngày đầu, và `EvidenceBundle` giữ đủ trạng thái trung gian
-để phân tích.
+Trạng thái: 🟡 **KHUNG ĐÃ XONG, ĐANG GÁN NHÃN** (2026-09). Chọn ngày, phiếu gán nhãn, bộ chấm
+A–E, κ và nguồn khí tượng ERA5 đã chạy được — xem §2.5. Chưa có số liệu thật.
 
 ---
 
@@ -64,6 +63,54 @@ Mỗi episode gắn 2–3 câu hỏi tiếng Việt tự nhiên, ở các mức 
 - Có tiền giả định: *"Vì sao AQI xấu dù hôm nay không mưa?"*
 - Phản chứng: *"Có phải do đốt rơm rạ không?"*
 - Ngoài phạm vi: *"Hôm nay có nên ra ngoài tập thể dục không?"* → kiểm tra hành vi từ chối
+
+### 2.5. Đã triển khai (2026-09)
+
+| Việc | Công cụ |
+|---|---|
+| Chọn 45 ngày theo **PM2.5 quan trắc** (OpenAQ, 2022-01 → 2024-12), cách nhau ≥5 ngày, 15 ngày/nhóm | `scripts/select_episode_candidates.py` → `data/eval/episodes.yaml` |
+| Hướng dẫn gán nhãn, nguyên tắc độc lập nguồn | `data/eval/LABELING.md` |
+| Phiếu người thứ hai (15 ngày rải đều 3 nhóm, seed 42) + Cohen's κ | `data/eval/episodes.annotator2.yaml`, `scripts/label_agreement.py` |
+| Chấm điểm theo cấu hình A–E | `scripts/score_episodes.py` |
+| Khí tượng thật cho episode | backend `era5` (`src/data/era5.py`), `download_era5_supplement.py` (t850, áp suất), `download_firms.py` (điểm cháy) |
+
+**Quyết định thiết kế**
+
+- **Chọn ngày bằng PM2.5, không bằng khí tượng.** Chọn theo PBLH thấp rồi kiểm tra hệ thống có
+  ra "PBLH thấp" không là vòng lặp. Cũng vì vậy phiếu gán nhãn không in PBLH, gió, mưa.
+- **YAML thay vì JSONL** như kế hoạch ban đầu: gán nhãn tay cần comment và `rationale` nhiều dòng.
+- **Ba vai trò cơ chế**: `primary` (bỏ sót là lỗi), `contributing` (không phạt ở F1 nới),
+  `excluded` (nguồn loại trừ rõ — khẳng định là lỗi nặng nhất, đếm riêng).
+- **Episode thật không bao giờ chạy trên dữ liệu mock** — bị bỏ qua và liệt kê.
+- **Không đưa SHAP giả vào episode thật.** Khi chưa có checkpoint lab, verdict là `NO_SHAP`.
+- **Không có dự báo → AQI lấy từ PM2.5 quan trắc**, và câu trả lời ghi rõ là "quan trắc".
+
+**Metric**
+
+| Metric | Định nghĩa |
+|---|---|
+| F1 chặt | micro-average trên cơ chế; chỉ `primary` được tính là đúng |
+| F1 nới | cơ chế `contributing` không bị phạt, cũng không được thưởng |
+| macro F1 | trung bình F1 chặt theo episode — báo cáo kèm để thấy độ lệch |
+| top-1 | cơ chế xếp đầu thuộc `primary` |
+| khẳng định sai | tỉ lệ episode khẳng định một cơ chế mà nguồn đã loại trừ |
+| đúng loại | câu chuyện narrator kể (`narrator.story_of`: AQI + điểm cơ chế) khớp `expected_outcome` |
+
+"Đúng loại" dùng **chính hàm narrator dùng** để chọn câu mở đầu, nên metric đo đúng thứ người
+dùng đọc được.
+
+**Hạn chế của dữ liệu ERA5**: ngày gom theo UTC; lapse rate từ trung bình ngày (làm mờ nghịch
+nhiệt ban đêm); `blh_min_2d` là cực tiểu của trung bình ngày; khí hậu nền tính trên cả ngày đang xét.
+
+**Kiểm thử bộ chấm** trên 6 episode tổng hợp (`--smoke`, nhãn theo thiết kế kịch bản — *không
+phải kết quả*): cấu hình D/E cho F1 chặt 0.53, F1 nới 0.75, top-1 0.50, đúng loại 1.00; A/B không
+khẳng định cơ chế nào.
+
+**Phát hiện cần quyết định trước khi chấm số thật.** `MECH_NO_WET_REMOVAL` là một *điều kiện
+cho phép* ("không mưa 3 ngày"), không phải nguyên nhân chủ động, nhưng lại xếp đầu ở 2/6 episode
+tổng hợp: đứng trên `MECH_BIOMASS_TRANSPORT` ở kịch bản đốt sinh khối, và trên
+`MECH_ADVECTION_CLEANSING` ở ngày gió mùa sạch. Lý do: R13 bão hòa ngay ở 0 mm nên strength =
+1.0, trong khi scoring xếp chung điều kiện cho phép với nguyên nhân chủ động.
 
 ---
 

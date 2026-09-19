@@ -1,6 +1,6 @@
 # 07 — Lộ trình & Definition of Done
 
-## 1. Trạng thái hiện tại (cập nhật 2026-09-15)
+## 1. Trạng thái hiện tại (cập nhật 2026-09-17)
 
 | Giai đoạn | Hạng mục | Trạng thái |
 |---|---|---|
@@ -16,10 +16,11 @@
 | **G1** | Demo có trích dẫn thật (`demo_explain.py --rag qdrant`) | ✅ |
 | **G1** | Đo độ phủ địa lý corpus: **Việt Nam + ĐNÁ = 8%** (83/1025) | ✅ đã đo |
 | **G1** | Hàng rào `feature_map` + sửa rò rỉ INV-3 ở `stagnation_days` | ✅ |
-| **G1** | Test tự động | ✅ 136, chạy offline |
+| **G1** | Test tự động | ✅ 179, chạy offline |
 | **G2** | Nối data + model của lab | ❌ **chờ mentor** — hàng rào kiểm tra đã sẵn |
 | **G3** | Hiệu chỉnh ngưỡng rule theo GFS | ❌ chờ M8 |
-| **G4** | Bộ episode gán nhãn + ablation + human eval | ⬜ **chưa bắt đầu — đường găng hiện tại** |
+| **G4** | Khung chấm điểm + phiếu 45 ngày + backend `era5` | ✅ khung xong |
+| **G4** | Gán nhãn 45 ngày + κ + chấm số thật + ablation | ⬜ **đang làm — đường găng hiện tại** |
 | **G5** | Giao diện demo (bản đồ + hỏi đáp) | ⬜ |
 | **G6** | Viết khóa luận + (tùy chọn) paper | ⬜ |
 
@@ -30,7 +31,9 @@
 | `f9ea5e3` feat(xai) | `stagnation_days` trả `None` khi không có dữ liệu gió (trước đó sinh bằng chứng "0 ngày" từ hư không). Thêm `src/xai/coverage.py` + `scripts/check_feature_map.py`: phát hiện khi tên đặc trưng của lab không ánh xạ được. Thử nghiệm cho thấy lệch tên làm cả 7 cơ chế rơi về PARTIAL và số mâu thuẫn phát hiện được tụt **8 → 0**, không có lỗi nào hiện ra |
 | `13f4633` feat(rag) | Chỉ lưu toàn văn khi có giấy phép mở tường minh (bronze OA đọc được nhưng không được lưu). Snowball theo danh mục tham khảo có cổng lọc miền. Một bài = một nhãn `[E#]`, `rag_support` đếm theo bài. `PrecomputedQueryEmbedder` để máy local không cần torch |
 | `a0e0830` feat(kaggle) | `notebooks/kaggle_build_kb.py` dựng KB trọn gói trên GPU, gọi chính code của repo. `demo_explain.py --rag` bật tầng RAG |
-| *chưa commit* | `scripts/calibrate_rag_gate.py`, `scripts/corpus_coverage.py`, `min_score = 0.569`, cập nhật docs |
+| `b8e5da0` feat(rag) | Cổng `min_score = 0.569` hiệu chỉnh trên corpus thật; `calibrate_rag_gate.py`, `corpus_coverage.py` |
+| `3bd6348` docs | Cập nhật roadmap và tài liệu RAG sau khi dựng corpus |
+| *chưa commit* | Bộ đánh giá (`src/evaluation.py`), chọn ngày + phiếu gán nhãn, bộ chấm A–E, κ; backend `era5` + script tải t850/áp suất/FIRMS; narrator dùng PM2.5 quan trắc khi không có dự báo |
 
 ---
 
@@ -43,17 +46,23 @@ Phần *ăn điểm* của khóa luận không nằm ở data, mà ở kiến tr
 | 1 | Corpus thật + index BGE-M3 | — | — | ✅ |
 | 2 | Nối `GatedRetriever` vào demo, chạy có trích dẫn | — | — | ✅ |
 | 3 | Hiệu chỉnh `min_score` sơ bộ trên corpus thật | — | — | ✅ 0.569 |
-| 4 | **Chọn 30–50 episode + gán nhãn nguyên nhân** từ CEM/báo cáo | 1 tuần | — | ⬜ **ưu tiên số 1** |
+| 4a | Khung chấm + phiếu 45 ngày chọn theo PM2.5 quan trắc | — | — | ✅ |
+| 4b | **Gán nhãn 45 ngày** theo `data/eval/LABELING.md` | 1 tuần | — | ⬜ **ưu tiên số 1** |
+| 4c | Người thứ hai gán 15 ngày → Cohen's κ | 2 ngày | 4b song song | ⬜ |
 | 5 | Viết bộ câu hỏi tiếng Việt cho từng episode | 2 ngày | (4) | ⬜ |
 | 6 | Kiểm lại `min_score` bằng đường cong precision trên query có nhãn | 2–3 ngày | — | ⬜ |
 | 7 | Bổ sung tài liệu Việt Nam/ĐNÁ: thêm truy vấn địa phương, thu thập tay tạp chí trong nước | 3–5 ngày | — | ⬜ |
 | 8 | Dựng khung đo faithfulness/hallucination (RAGAS hoặc NLI) | 3–4 ngày | — | ⬜ |
 | 9 | Rà soát danh mục tài liệu tham khảo bằng chính RAG (dogfooding) | 2 ngày | — | ⬜ |
-| 10 | Đường lui offline cho ngày bảo vệ (`--rag memory`) | nửa ngày | — | ⬜ |
+| 10 | Đường lui offline cho ngày bảo vệ: snapshot Qdrant Cloud → Qdrant local | nửa ngày | — | ⬜ |
 | 11 | Giao diện demo tối giản (FastAPI + bản đồ) | 1 tuần | — | ⬜ |
+| 12 | Tải t850 + áp suất ERA5 (`download_era5_supplement.py`) | nửa ngày | tài khoản CDS | ⬜ |
+| 13 | Tải điểm cháy FIRMS cho các ngày episode (`download_firms.py`) | 1 giờ | FIRMS_MAP_KEY, sau 4a | ⬜ |
+| 14 | Quyết định: điều kiện cho phép có được xếp hạng chung với nguyên nhân không (xem §6) | — | — | ⬜ trước khi chấm số thật |
+| 15 | Hỏi mentor M10: mô hình lab huấn luyện trên giai đoạn nào | — | mentor | ⬜ |
 
-**Ưu tiên (4) → (5) → (8).** Corpus đã xong, nên bộ episode giờ là thứ duy nhất chặn toàn
-bộ chương đánh giá mà không phụ thuộc ai. Gán nhãn tốn thời gian đọc báo cáo, khởi động sớm.
+**Ưu tiên (4b) → (12, 13) → (14) → chấm số thật.** Khung đã xong; việc tốn thời gian nhất
+giờ là đọc báo cáo để gán nhãn. Việc 12–13 chạy song song được trong lúc gán nhãn.
 
 ---
 
@@ -90,7 +99,7 @@ Phương án 1 đáng chuẩn bị sớm vì dữ liệu ERA5 **đã có sẵn t
 |---|---|---|
 | ~~0~~ | ~~Corpus + index + demo có trích dẫn~~ | ✅ xong 2026-09-12 |
 | 1 | Commit phần còn lại; gặp mentor, nhận artifacts hoặc chốt phương án dự phòng | Data contract điền xong |
-| 1–2 | Chọn & gán nhãn 30–50 episode; bổ sung tài liệu Việt Nam | `data/eval/episodes.jsonl` |
+| 1–2 | Gán nhãn 45 episode + tải t850/áp suất/FIRMS; bổ sung tài liệu Việt Nam | `data/eval/episodes.yaml` |
 | 2–3 | Nối provider lab + calibrate ngưỡng | Backend `lab` chạy |
 | 3–4 | Khung đo faithfulness + chạy ablation A–E | Bảng kết quả chính |
 | 4–5 | Metric riêng (consistency rate, conflict rate, non-mech share) | Đóng góp số 2 định lượng |
@@ -130,10 +139,13 @@ Mục cuối là mục dễ quên nhất và cũng là mục hội đồng dễ 
 | GFS phân giải thô cho đô thị | Attribution không gian kém sắc | Coi khí tượng là "điều kiện vùng" — đúng bản chất. Nêu rõ hạn chế |
 | Corpus lệch địa lý — **đã đo: Việt Nam + ĐNÁ 8%** | Phát biểu mang tính địa phương thiếu căn cứ | Trích dẫn chứng minh *cơ chế*, không chứng minh địa điểm. Nêu con số trong chương hạn chế; bổ sung tài liệu Việt Nam (§2 việc 7) |
 | Cổng `min_score` mới hiệu chỉnh sơ bộ | Trích dẫn lạc đề lọt, hoặc chặn nhầm | Đường cong precision trên query có nhãn (§2 việc 6). Đổi embedder → phải hiệu chỉnh lại |
-| Qdrant Cloud mất mạng ngày bảo vệ | Mất tầng trích dẫn khi demo | Chạy thử `--rag memory` trước ngày bảo vệ |
+| Qdrant Cloud mất mạng ngày bảo vệ | Mất tầng trích dẫn khi demo | Snapshot collection → khôi phục vào Qdrant local (docker). `--rag memory` KHÔNG dùng được với backend `precomputed` |
 | Phạm vi phình to | Trễ deadline | Khóa cứng: Sentinel-5P, Bayesian, traffic real-time đều là future work |
 | LLM vẫn lỡ bịa | Mất tính "no speculation" | Retrieval-gating + hậu kiểm faithfulness + abstain policy |
 | Gán nhãn episode trễ | Chặn Cause F1 | Đo Q-B (faithfulness) trước — không cần nhãn |
+| Điều kiện cho phép (`MECH_NO_WET_REMOVAL`) xếp trên nguyên nhân chủ động | top-1 sai dù cơ chế đúng có trong câu trả lời | Đã thấy trên episode tổng hợp (2/6). Quyết định cách xếp hạng trước khi chấm số thật (§2 việc 14) |
+| Episode 2022–2024 nằm trong tập train của lab (M10) | SHAP giải thích dự báo đã "thấy đáp án" | Hỏi mentor trước khi báo cáo số có SHAP. Phần rule + RAG chấm trên ERA5 không bị ảnh hưởng |
+| ERA5 gom ngày theo UTC, lapse rate lấy trung bình ngày | R3 thận trọng hơn thực tế | Nêu hạn chế; file bổ sung có sẵn t850 lúc 07:00 để thử cách tính buổi sáng |
 
 ---
 

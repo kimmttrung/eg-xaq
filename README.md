@@ -195,7 +195,7 @@ sửa Python. Mỗi ngưỡng bắt buộc có trường `rationale` và `source
 | Constrained narrator (dryrun + Claude API) | ✅ |
 | Pipeline + ablation A–E | ✅ |
 | **Data GFS + checkpoint XGBoost của lab** | ❌ **chờ mentor** |
-| Bộ episode gán nhãn + đánh giá định lượng | ⬜ |
+| Bộ episode + đánh giá định lượng | 🟡 khung chấm + phiếu 45 ngày xong, đang gán nhãn |
 
 Chi tiết tiến độ và việc tiếp theo: [docs/07-roadmap.md](docs/07-roadmap.md).
 
